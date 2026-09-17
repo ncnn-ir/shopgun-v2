@@ -24,3 +24,7 @@ add_bulk.py
 *.bak-*
 *.disabled-*
 /storage/backups
+fix_*.py
+add_bulk.py
+*.bak-*
+/storage/backups
