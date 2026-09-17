@@ -31,3 +31,8 @@ shopgun-v2.tar.gz
 *.tar.gz
 /bootstrap/cache/*.php
 /storage/framework/views/*.php
+# ShopGun extra
+shopgun-v2.tar.gz
+*.tar.gz
+/bootstrap/cache/*.php
+/storage/framework/views/*.php
