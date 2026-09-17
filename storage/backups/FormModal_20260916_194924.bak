@@ -1,0 +1,407 @@
+<?php
+
+namespace App\Livewire\Orders;
+
+use App\Models\Channel;
+use App\Models\Customer;
+use App\Models\Order;
+use App\Models\Product;
+use Livewire\Attributes\On;
+use Livewire\Component;
+
+class FormModal extends Component
+{
+    public bool $show = false;
+    public ?int $orderId = null;
+    public string $mode = 'create';
+
+    public ?int $customerId = null;
+    public string $customerName = '';
+    public string $customerPhone = '';
+    public string $customerAddress = '';
+    public string $customerPostal = '';
+
+    public array $cart = [];
+
+    /* ادیتور محصول */
+    public string $draftSku = '';
+    public string $draftTitle = '';
+    public string $draftPrice = '0';
+    public int    $draftQty = 1;
+    public bool   $draftCert = false;
+    public array  $draftSuggestions = [];
+
+    /* مالی */
+    public string $insurance = '0';
+    public string $discount  = '0';
+    public string $shipping  = '0';
+    public string $status    = 'pending';
+    public ?int   $channelId = null;
+    public string $notes     = '';
+    public bool   $invoiceNeeded = false;
+    public bool   $insuranceManual = false; // اگر کاربر دستی تغییر داد
+
+    public array $statusOptions = [
+        ['id' => 'pending',     'name' => 'ثبت سفارش',   'icon' => '📝'],
+        ['id' => 'final-check', 'name' => 'چک نهایی',    'icon' => '🔍'],
+        ['id' => 'courier',     'name' => 'تحویل مامور', 'icon' => '🚚'],
+    ];
+
+    #[On('open-order-form')]
+    public function open(?int $orderId = null): void
+    {
+        if ($this->show && !$orderId && !$this->orderId) return;
+
+        $this->resetForm();
+        $this->orderId = $orderId;
+        $this->mode = $orderId ? 'edit' : 'create';
+
+        if ($orderId) $this->loadOrder($orderId);
+
+        $this->show = true;
+        $this->dispatch('customer-picker-set', id: $this->customerId);
+        $this->dispatch('product-picker-set', cart: $this->cart);
+    }
+
+    public function close(): void
+    {
+        $this->show = false;
+        $this->resetForm();
+    }
+
+    protected function resetForm(): void
+    {
+        $this->orderId = null;
+        $this->customerId = null;
+        $this->customerName = '';
+        $this->customerPhone = '';
+        $this->customerAddress = '';
+        $this->customerPostal = '';
+        $this->cart = [];
+        $this->draftSku = '';
+        $this->draftTitle = '';
+        $this->draftPrice = '0';
+        $this->draftQty = 1;
+        $this->draftCert = false;
+        $this->draftSuggestions = [];
+        $this->insurance = '0';
+        $this->discount = '0';
+        $this->shipping = '0';
+        $this->status = 'pending';
+        $this->channelId = null;
+        $this->notes = '';
+        $this->invoiceNeeded = false;
+        $this->insuranceManual = false;
+    }
+
+    protected function loadOrder(int $orderId): void
+    {
+        $o = Order::with(['items', 'customer'])->find($orderId);
+        if (!$o) return;
+
+        $this->customerId = $o->customer_id;
+        $this->customerName = $o->customer_name ?? $o->customer?->name ?? '';
+        $this->customerPhone = $o->phone ?? '';
+        $this->customerAddress = $o->address ?? '';
+        $this->customerPostal = $o->postal_code ?? '';
+        $this->insurance = (string) ($o->insurance ?? 0);
+        $this->discount  = (string) ($o->discount ?? 0);
+        $this->shipping  = (string) ($o->shipping ?? 0);
+        $this->status    = $o->status ?? 'pending';
+        $this->channelId = $o->channel_id;
+        $this->notes     = $o->notes ?? '';
+        $this->invoiceNeeded = (bool) $o->invoice_needed;
+        $this->insuranceManual = true;
+
+        $this->cart = [];
+        foreach ($o->items as $item) {
+            $this->cart[] = [
+                'product_id' => $item->product_id,
+                'sku'        => $item->sku ?? '',
+                'title'      => $item->title ?? $item->name ?? '—',
+                'price'      => (float) $item->price,
+                'qty'        => (int) $item->quantity,
+                'certNeeded' => (bool) ($item->certificate_needed ?? false),
+            ];
+        }
+    }
+
+    #[On('customer-selected')]
+    public function onCustomerSelected(int $customerId, array $data): void
+    {
+        $this->customerId = $customerId;
+        $this->customerName = $data['name'] ?? '';
+        $this->customerPhone = $data['phone'] ?? '';
+        $this->customerAddress = $data['address'] ?? '';
+        $this->customerPostal = $data['postal_code'] ?? '';
+    }
+
+    #[On('customer-cleared')]
+    public function onCustomerCleared(): void
+    {
+        $this->customerId = null;
+        $this->customerName = '';
+        $this->customerPhone = '';
+        $this->customerAddress = '';
+        $this->customerPostal = '';
+    }
+
+    #[On('products-updated')]
+    public function onProductsUpdated(array $cart): void
+    {
+        $this->cart = $cart;
+        $this->autoCalcInsurance();
+    }
+
+    /* ═══ SKU Search ═══ */
+    public function updatedDraftSku(): void
+    {
+        $q = trim($this->draftSku);
+        if (mb_strlen($q) < 2) {
+            $this->draftSuggestions = [];
+            return;
+        }
+
+        $this->draftSuggestions = Product::active()
+            ->search($q)
+            ->orderByRaw('CASE WHEN sku = ? THEN 0 WHEN sku LIKE ? THEN 1 ELSE 2 END', [$q, $q . '%'])
+            ->limit(10)
+            ->get()
+            ->map(fn($p) => [
+                'id' => $p->id, 'sku' => $p->sku, 'name' => $p->name,
+                'price' => (float) $p->price, 'price_fmt' => $p->price_formatted,
+                'image' => $p->image_src, 'stock' => $p->stock_quantity,
+            ])
+            ->toArray();
+
+        $exact = Product::where('sku', $q)->first();
+        if ($exact) $this->fillDraftFromProduct($exact);
+    }
+
+    public function pickDraftProduct(int $productId): void
+    {
+        $p = Product::find($productId);
+        if ($p) $this->fillDraftFromProduct($p);
+    }
+
+    protected function fillDraftFromProduct(Product $p): void
+    {
+        $this->draftSku = $p->sku;
+        $this->draftTitle = $p->name;
+        $this->draftPrice = number_format((float) $p->price, 0, '.', '');
+        $this->draftSuggestions = [];
+    }
+
+    public function addDraftToCart(): void
+    {
+        $title = trim($this->draftTitle);
+        $price = (float) preg_replace('/[^\d.]/', '', $this->draftPrice ?: '0');
+
+        if ($title === '') {
+            $this->addError('draftTitle', 'عنوان محصول الزامی است');
+            return;
+        }
+
+        $found = false;
+        foreach ($this->cart as $i => $item) {
+            if (!empty($this->draftSku) && ($item['sku'] ?? '') === $this->draftSku) {
+                $this->cart[$i]['qty'] = ((int) ($item['qty'] ?? 1)) + $this->draftQty;
+                $this->cart[$i]['price'] = $price;
+                $found = true;
+                break;
+            }
+        }
+
+        if (!$found) {
+            $this->cart[] = [
+                'product_id' => null,
+                'sku' => trim($this->draftSku),
+                'title' => $title,
+                'price' => $price,
+                'qty' => max(1, $this->draftQty),
+                'certNeeded' => $this->draftCert,
+            ];
+        }
+
+        $this->dispatch('product-picker-set', cart: $this->cart);
+        $this->autoCalcInsurance();
+
+        $this->reset(['draftSku', 'draftTitle', 'draftPrice', 'draftQty', 'draftCert', 'draftSuggestions']);
+        $this->draftPrice = '0';
+        $this->draftQty = 1;
+    }
+
+    public function removeCartItem(int $idx): void
+    {
+        unset($this->cart[$idx]);
+        $this->cart = array_values($this->cart);
+        $this->dispatch('product-picker-set', cart: $this->cart);
+        $this->autoCalcInsurance();
+    }
+
+    public function updateCartQty(int $idx, $qty): void
+    {
+        if (!isset($this->cart[$idx])) return;
+        $this->cart[$idx]['qty'] = max(1, (int) $qty);
+        $this->dispatch('product-picker-set', cart: $this->cart);
+        $this->autoCalcInsurance();
+    }
+
+    public function updateCartPrice(int $idx, $price): void
+    {
+        if (!isset($this->cart[$idx])) return;
+        $this->cart[$idx]['price'] = (float) preg_replace('/[^\d.]/', '', (string) $price);
+        $this->dispatch('product-picker-set', cart: $this->cart);
+        $this->autoCalcInsurance();
+    }
+
+    /* ═══ محاسبه‌ها ═══ */
+    public function getSubtotalProperty(): float
+    {
+        $s = 0;
+        foreach ($this->cart as $it) {
+            $s += ((float) ($it['price'] ?? 0)) * ((int) ($it['qty'] ?? 1));
+        }
+        return $s;
+    }
+
+    public function getInsuranceAmountProperty(): float
+    {
+        return (float) preg_replace('/[^\d.]/', '', $this->insurance ?: '0');
+    }
+
+    public function getDiscountAmountProperty(): float
+    {
+        return (float) preg_replace('/[^\d.]/', '', $this->discount ?: '0');
+    }
+
+    public function getShippingAmountProperty(): float
+    {
+        return (float) preg_replace('/[^\d.]/', '', $this->shipping ?: '0');
+    }
+
+    public function getTotalProperty(): float
+    {
+        return max(0, $this->subtotal + $this->insurance_amount + $this->shipping_amount - $this->discount_amount);
+    }
+
+    /**
+     * ★ محاسبه خودکار بیمه — حذف ۶ رقم از مبلغ کل
+     * 25,000,000 → 25
+     * 10,000,000 → 10
+     */
+    protected function autoCalcInsurance(): void
+    {
+        if ($this->insuranceManual) return;
+
+        $total = $this->subtotal;
+        if ($total <= 0) {
+            $this->insurance = '0';
+            return;
+        }
+
+        // تقسیم بر 1,000,000 و گرد کردن به پایین
+        $ins = (int) floor($total / 1000000);
+        $this->insurance = (string) $ins;
+    }
+
+    /**
+     * اگر کاربر دستی بیمه رو تغییر داد، دیگه خودکار حساب نکن
+     */
+    public function updatedInsurance(): void
+    {
+        // اگر مقدار فعلی با محاسبه خودکار یکی نیست، یعنی دستی تغییر داد
+        $auto = (int) floor($this->subtotal / 1000000);
+        $cur = (int) preg_replace('/[^\d.]/', '', $this->insurance ?: '0');
+        $this->insuranceManual = ($cur !== $auto && $cur > 0);
+    }
+
+    public function recalcInsurance(): void
+    {
+        $this->insuranceManual = false;
+        $this->autoCalcInsurance();
+    }
+
+    /* ═══ ذخیره ═══ */
+    public function save()
+    {
+        $this->validate([
+            'customerPhone' => 'required|string|max:20',
+            'customerName'  => 'required|string|max:120',
+            'status'        => 'required|in:pending,final-check,courier',
+            'cart'          => 'required|array|min:1',
+        ], [], [
+            'customerPhone' => 'تلفن',
+            'customerName'  => 'نام',
+            'status'        => 'وضعیت',
+            'cart'          => 'سبد',
+        ]);
+
+        $customer = $this->customerId ? Customer::find($this->customerId) : null;
+        if (!$customer) $customer = Customer::findByPhone($this->customerPhone);
+        if (!$customer) {
+            $customer = Customer::create([
+                'name'        => $this->customerName,
+                'phone'       => Customer::normalizePhone($this->customerPhone),
+                'address'     => $this->customerAddress,
+                'postal_code' => $this->customerPostal,
+            ]);
+            $customer->addPhone($this->customerPhone, 'اصلی', true);
+            if ($this->customerAddress || $this->customerPostal) {
+                $customer->addAddress([
+                    'address'     => $this->customerAddress,
+                    'postal_code' => $this->customerPostal,
+                ], true);
+            }
+        }
+
+        $orderData = [
+            'customer_id'    => $customer->id,
+            'customer_name'  => $this->customerName,
+            'phone'          => Customer::normalizePhone($this->customerPhone),
+            'address'        => $this->customerAddress,
+            'postal_code'    => $this->customerPostal,
+            'status'         => $this->status,
+            'channel_id'     => $this->channelId,
+            'insurance'      => $this->insurance_amount,
+            'discount'       => $this->discount_amount,
+            'shipping'       => $this->shipping_amount,
+            'amount'         => $this->total,
+            'notes'          => $this->notes,
+            'invoice_needed' => $this->invoiceNeeded,
+        ];
+
+        if ($this->orderId) {
+            $order = Order::find($this->orderId);
+            $order->update($orderData);
+            $order->items()->delete();
+        } else {
+            $orderData['order_number'] = Order::generateNumber();
+            $order = Order::create($orderData);
+        }
+
+        foreach ($this->cart as $it) {
+            $order->items()->create([
+                'product_id'         => $it['product_id'] ?? null,
+                'sku'                => $it['sku'] ?? null,
+                'title'              => $it['title'] ?? '—',    // ★ اصلاح شد
+                'price'              => (float) ($it['price'] ?? 0),
+                'quantity'           => (int) ($it['qty'] ?? 1),
+                'certificate_needed' => !empty($it['certNeeded']),
+            ]);
+        }
+
+        $this->dispatch('order-saved', orderId: $order->id);
+        $this->dispatch('notify', type: 'success',
+            message: $this->orderId ? 'سفارش ویرایش شد ✅' : 'سفارش ثبت شد ✅');
+
+        $this->close();
+    }
+
+    public function render()
+    {
+        return view('livewire.orders.form-modal', [
+            'channels' => Channel::orderBy('id')->get(),
+        ]);
+    }
+}

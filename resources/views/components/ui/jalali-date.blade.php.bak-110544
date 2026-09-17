@@ -1,0 +1,136 @@
+@props([
+    'model' => null,
+    'label' => null,
+    'placeholder' => '۱۴۰۳/۰۱/۰۱',
+    'hint' => null,
+])
+
+@php
+    $id = 'jp-' . uniqid();
+    $modelAttr = $model ? "wire:model.live=$model" : '';
+@endphp
+
+<div class="field">
+    @if($label)
+        <label for="{{ $id }}">{{ $label }}</label>
+    @endif
+    <div class="jalali-picker-wrap" wire:ignore x-data="jalaliPicker(@entangle($model ?? 'null'))">
+        <input
+            id="{{ $id }}"
+            type="text"
+            x-ref="inp"
+            :value="display"
+            @click="open()"
+            @input="onType($event)"
+            @blur="setTimeout(() => close(), 200)"
+            placeholder="{{ $placeholder }}"
+            dir="ltr"
+            autocomplete="off"
+            inputmode="numeric"
+        />
+        <span class="calendar-icon">📅</span>
+
+        <div x-show="isOpen" x-transition.opacity
+             @click.outside="close()"
+             class="absolute z-[100] mt-1 p-3 bg-base-100 border-2 border-primary rounded-xl shadow-2xl"
+             style="top: 100%; right: 0; width: 290px; direction: rtl;">
+            <div class="flex items-center justify-between mb-2">
+                <button type="button" @click="prevMonth()" class="btn btn-ghost btn-xs">›</button>
+                <div class="text-sm font-bold" x-text="monthNames[month-1] + ' ' + fa(year)"></div>
+                <button type="button" @click="nextMonth()" class="btn btn-ghost btn-xs">‹</button>
+            </div>
+            <div class="grid grid-cols-7 gap-1 mb-1 text-[10px] text-center opacity-60">
+                <div>ش</div><div>ی</div><div>د</div><div>س</div><div>چ</div><div>پ</div><div>ج</div>
+            </div>
+            <div class="grid grid-cols-7 gap-1">
+                <template x-for="i in firstDay" :key="'b'+i"><div></div></template>
+                <template x-for="d in daysInMonth" :key="d">
+                    <button type="button" @click="pick(d)"
+                            class="w-full aspect-square rounded text-xs font-bold transition"
+                            :class="isSelected(d) ? 'bg-primary text-white' : 'hover:bg-base-200'"
+                            x-text="fa(d)"></button>
+                </template>
+            </div>
+            <div class="flex justify-between mt-3 pt-2 border-t border-base-300">
+                <button type="button" @click="clear()" class="btn btn-ghost btn-xs">پاک</button>
+                <button type="button" @click="today()" class="btn btn-primary btn-xs">امروز</button>
+            </div>
+        </div>
+    </div>
+    @if($hint)<div class="hint">{{ $hint }}</div>@endif
+</div>
+
+@once
+@push('scripts')
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('jalaliPicker', (initial) => ({
+        isOpen: false,
+        value: initial || '',
+        year: 1403,
+        month: 1,
+        monthNames: ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'],
+        monthDays: [31,31,31,31,31,31,30,30,30,30,30,29],
+        get display() {
+            if (!this.value) return '';
+            const p = String(this.value).split('/');
+            if (p.length !== 3) return this.value;
+            return this.fa(p[0]) + '/' + this.fa(p[1]) + '/' + this.fa(p[2]);
+        },
+        get daysInMonth() { return this.monthDays[this.month - 1]; },
+        get firstDay() { return (this.year + this.month) % 7; },
+        init() {
+            const t = new Date();
+            const j = this.g2j(t.getFullYear(), t.getMonth() + 1, t.getDate());
+            this.year = j[0]; this.month = j[1];
+            this.$watch('value', v => {
+                if (v) {
+                    const p = String(v).split('/');
+                    if (p.length === 3) { this.year = +p[0] || this.year; this.month = +p[1] || this.month; }
+                }
+            });
+        },
+        fa(n) { return String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]); },
+        en(n) { return String(n).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)); },
+        open() { this.isOpen = true; },
+        close() { this.isOpen = false; },
+        prevMonth() { this.month--; if (this.month < 1) { this.month = 12; this.year--; } },
+        nextMonth() { this.month++; if (this.month > 12) { this.month = 1; this.year++; } },
+        isSelected(d) {
+            if (!this.value) return false;
+            const p = String(this.value).split('/');
+            return +p[0] === this.year && +p[1] === this.month && +p[2] === d;
+        },
+        pick(d) {
+            this.value = this.year + '/' + String(this.month).padStart(2, '0') + '/' + String(d).padStart(2, '0');
+            this.isOpen = false;
+        },
+        clear() { this.value = ''; this.isOpen = false; },
+        today() {
+            const t = new Date();
+            const j = this.g2j(t.getFullYear(), t.getMonth() + 1, t.getDate());
+            this.value = j[0] + '/' + String(j[1]).padStart(2, '0') + '/' + String(j[2]).padStart(2, '0');
+            this.isOpen = false;
+        },
+        onType(e) {
+            const v = this.en(e.target.value).replace(/[^\d/]/g, '');
+            e.target.value = this.fa(v);
+        },
+        g2j(gy, gm, gd) {
+            const gdm = [0,31,59,90,120,151,181,212,243,273,304,334];
+            let jy = (gy <= 1600) ? 0 : 979;
+            gy -= (gy <= 1600) ? 621 : 1600;
+            const gy2 = (gm > 2) ? (gy + 1) : gy;
+            let days = (365*gy) + Math.floor((gy2+3)/4) - Math.floor((gy2+99)/100) + Math.floor((gy2+399)/400) - 80 + gd + gdm[gm-1];
+            jy += 33 * Math.floor(days/12053); days %= 12053;
+            jy += 4 * Math.floor(days/1461); days %= 1461;
+            if (days > 365) { jy += Math.floor((days-1)/365); days = (days-1)%365; }
+            const jm = (days < 186) ? 1 + Math.floor(days/31) : 7 + Math.floor((days-186)/30);
+            const jd = 1 + ((days < 186) ? (days%31) : ((days-186)%30));
+            return [jy, jm, jd];
+        },
+    }));
+});
+</script>
+@endpush
+@endonce

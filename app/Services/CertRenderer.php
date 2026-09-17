@@ -1,0 +1,427 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Certificate;
+use App\Support\CertConfig;
+use App\Support\PersianNumber;
+
+class CertRenderer
+{
+    /**
+     * ★ HTML فقط کارت (بدون DOCTYPE) — برای نمایش مستقیم
+     */
+    public static function renderCard(Certificate $cert): string
+    {
+        // اول design_data شناسنامه
+        if (!empty($cert->design_data) && is_array($cert->design_data)) {
+            return self::renderFromDesign($cert, $cert->design_data, false);
+        }
+        // بعد global_design
+        $global = self::getGlobalDesign();
+        if (!empty($global) && is_array($global)) {
+            return self::renderFromDesign($cert, $global, false);
+        }
+        // پیش‌فرض
+        return self::buildCardInner($cert, false);
+    }
+
+    protected static function getGlobalDesign(): ?array
+    {
+        try {
+            if (class_exists(\App\Models\CertSetting::class)) {
+                $d = \App\Models\CertSetting::get('global_design', null);
+                if (is_string($d)) return json_decode($d, true);
+                if (is_array($d)) return $d;
+            }
+        } catch (\Throwable $e) {}
+        return null;
+    }
+
+    /**
+     * ★ HTML کامل با DOCTYPE — برای iframe/چاپ
+     */
+    public static function renderHtml(Certificate $cert, array $opts = []): string
+    {
+        // اگر design_data دارد
+        if (!empty($cert->design_data) && is_array($cert->design_data)) {
+            $card = self::renderFromDesign($cert, $cert->design_data, true);
+        } else {
+            $card = self::buildCardInner($cert, true);
+        }
+        $css = self::inlineCss();
+        return '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8">'
+            . '<link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">'
+            . '<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:wght@400;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">'
+            . '<style>' . $css . '</style></head><body style="margin:0;padding:0;background:transparent;">'
+            . $card . '</body></html>';
+    }
+
+    /**
+     * ★ رندر از design_data (Fabric.js JSON)
+     */
+    protected static function renderFromDesign(Certificate $cert, array $design, bool $includeStyle): string
+    {
+        $sizes = CertConfig::sizes();
+        $cw = (float) ($sizes['width']  ?? 6.5);
+        $ch = (float) ($sizes['height'] ?? 6.5);
+        $pxW = (int) round($cw * 96 / 2.54);
+        $pxH = (int) round($ch * 96 / 2.54);
+
+        // ابعاد canvas اصلی در Designer
+        $canvasW = (float) ($design['canvas_width']  ?? 600);
+        $canvasH = (float) ($design['canvas_height'] ?? 600);
+
+        $scaleX = $pxW / $canvasW;
+        $scaleY = $pxH / $canvasH;
+        $scale  = min($scaleX, $scaleY);
+
+        // متغیرها
+        $vars = [
+            '{code}'       => $cert->code ?? '',
+            '{serial}'     => $cert->serial ?? '',
+            '{stoneName}'  => $cert->stone_name ?? '',
+            '{stoneEn}'    => $cert->stone_en ?? '',
+            '{origin}'     => $cert->stone_origin ?? '',
+            '{metal}'      => $cert->metal ?? '',
+            '{metalEn}'    => $cert->metal_en ?? $cert->metal ?? '',
+            '{carat}'      => $cert->metal_carat ?? '',
+            '{length}'     => $cert->length_clean ?? '0',
+            '{width}'      => $cert->width_clean  ?? '0',
+            '{weight}'     => $cert->weight_clean ?? '0',
+            '{brilliant}'  => $cert->brilliant_clean ?? '0',
+            '{image}'      => '',
+            '{qr}'         => '',
+            '{logo}'       => '',
+            '{description}'=> 'This certificate is only for authenticity of purchased product.',
+        ];
+
+        // تصویر محصول
+        $imgSrc = '';
+        if (!empty($cert->image_url))    $imgSrc = $cert->image_url;
+        elseif (!empty($cert->image_path)) $imgSrc = asset('storage/' . $cert->image_path);
+        $qrUrl = $cert->qr_url;
+
+        $objects = $design['objects'] ?? [];
+        $inner = '';
+
+        foreach ($objects as $o) {
+            $type = $o['type'] ?? '';
+            $name = $o['name'] ?? '';
+
+            // موقعیت و اندازه
+            $left   = ((float) ($o['left'] ?? 0)) * $scale;
+            $top    = ((float) ($o['top']  ?? 0)) * $scale;
+            $scX    = (float) ($o['scaleX'] ?? 1);
+            $scY    = (float) ($o['scaleY'] ?? 1);
+            $angle  = (float) ($o['angle'] ?? 0);
+            $opacity = (float) ($o['opacity'] ?? 1);
+            $originX = $o['originX'] ?? 'left';
+            $originY = $o['originY'] ?? 'top';
+
+            // style پایه
+            $baseStyle = 'position:absolute;'
+                . 'left:' . round($left, 2) . 'px;'
+                . 'top:'  . round($top, 2)  . 'px;'
+                . 'opacity:' . $opacity . ';';
+
+            if ($angle != 0) $baseStyle .= 'transform:rotate(' . $angle . 'deg);';
+
+            // اصلاح originX
+            if ($originX === 'center') $baseStyle .= 'transform-origin:center top;';
+            elseif ($originX === 'right') $baseStyle .= 'transform-origin:right top;';
+
+            // ---- TEXT ----
+            if ($type === 'i-text' || $type === 'text' || $type === 'textbox') {
+                $rawText = $o['text'] ?? '';
+                $text = strtr($rawText, $vars);
+
+                $fs = ((float) ($o['fontSize'] ?? 14)) * $scale;
+                $fontFamily = $o['fontFamily'] ?? 'Inter';
+                $fontWeight = $o['fontWeight'] ?? 'normal';
+                $fontStyle  = $o['fontStyle']  ?? 'normal';
+                $fill = $o['fill'] ?? '#2c3e50';
+                $underline = !empty($o['underline']) ? 'text-decoration:underline;' : '';
+                $lineHeight = $o['lineHeight'] ?? 1.16;
+
+                $tx = '';
+                if ($originX === 'center') $tx = 'transform:translateX(-50%);';
+                elseif ($originX === 'right') $tx = 'transform:translateX(-100%);';
+
+                $ty = '';
+                if ($originY === 'center') $ty = 'transform:translateY(-50%);';
+                elseif ($originY === 'bottom') $ty = 'transform:translateY(-100%);';
+
+                // ترکیب transform
+                $tr = 'transform:';
+                if ($originX === 'center') $tr .= 'translateX(-50%) ';
+                elseif ($originX === 'right') $tr .= 'translateX(-100%) ';
+                if ($originY === 'center') $tr .= 'translateY(-50%) ';
+                elseif ($originY === 'bottom') $tr .= 'translateY(-100%) ';
+                if ($angle != 0) $tr .= 'rotate(' . $angle . 'deg) ';
+
+                $inner .= '<div style="' . $baseStyle
+                    . $tr
+                    . 'font-family:' . e($fontFamily) . ',sans-serif;'
+                    . 'font-size:' . round($fs, 2) . 'px;'
+                    . 'font-weight:' . e($fontWeight) . ';'
+                    . 'font-style:' . e($fontStyle) . ';'
+                    . 'color:' . e($fill) . ';'
+                    . 'line-height:' . $lineHeight . ';'
+                    . 'white-space:pre-wrap;'
+                    . 'text-align:' . ($originX === 'right' ? 'right' : ($originX === 'center' ? 'center' : 'left')) . ';'
+                    . $underline
+                    . '">' . e($text) . '</div>';
+            }
+            // ---- RECT ----
+            elseif ($type === 'rect') {
+                $w = ((float) ($o['width'] ?? 0)) * $scX * $scale;
+                $h = ((float) ($o['height'] ?? 0)) * $scY * $scale;
+                $fill   = $o['fill'] ?? 'transparent';
+                $stroke = $o['stroke'] ?? 'transparent';
+                $sw     = ((float) ($o['strokeWidth'] ?? 0)) * $scale;
+                $rx     = ((float) ($o['rx'] ?? 0)) * $scale;
+
+                $isImage = strpos($name, 'image') !== false;
+                $isQR    = strpos($name, 'qr')    !== false;
+                $isLogo  = strpos($name, 'logo')  !== false;
+
+                $content = '';
+                if ($isImage && $imgSrc) {
+                    $content = '<img src="' . e($imgSrc) . '" style="width:100%;height:100%;object-fit:contain;display:block;" crossorigin="anonymous">';
+                } elseif ($isQR) {
+                    $content = '<img src="' . e($qrUrl) . '" style="width:100%;height:100%;object-fit:contain;display:block;">';
+                } elseif ($isLogo) {
+                    $assets = CertConfig::assets();
+                    if (!empty($assets['logo_image'])) {
+                        $content = '<img src="' . e($assets['logo_image']) . '" style="width:100%;height:100%;object-fit:contain;display:block;">';
+                    }
+                }
+
+                $inner .= '<div style="' . $baseStyle
+                    . 'width:' . round($w, 2) . 'px;'
+                    . 'height:' . round($h, 2) . 'px;'
+                    . 'background:' . e($fill) . ';'
+                    . 'border:' . round($sw, 2) . 'px solid ' . e($stroke) . ';'
+                    . 'border-radius:' . round($rx, 2) . 'px;'
+                    . 'overflow:hidden;'
+                    . 'display:flex;align-items:center;justify-content:center;'
+                    . 'box-sizing:border-box;'
+                    . '">' . $content . '</div>';
+            }
+            // ---- LINE ----
+            elseif ($type === 'line') {
+                $x1 = ((float) ($o['x1'] ?? 0)) * $scale;
+                $y1 = ((float) ($o['y1'] ?? 0)) * $scale;
+                $x2 = ((float) ($o['x2'] ?? 0)) * $scale;
+                $y2 = ((float) ($o['y2'] ?? 0)) * $scale;
+                $stroke = $o['stroke'] ?? '#6b4423';
+                $sw = ((float) ($o['strokeWidth'] ?? 1)) * $scale;
+
+                $w = abs($x2 - $x1);
+                $inner .= '<div style="position:absolute;left:' . round(min($x1, $x2), 2) . 'px;top:' . round(min($y1, $y2), 2) . 'px;'
+                    . 'width:' . round($w, 2) . 'px;height:' . round($sw, 2) . 'px;'
+                    . 'background:' . e($stroke) . ';"></div>';
+            }
+        }
+
+        $styleTag = $includeStyle ? '<style>' . self::inlineCss() . '</style>' : '';
+
+        return $styleTag
+            . '<div class="certificate" data-cert-code="' . e($cert->code) . '" '
+            . 'style="width:' . $pxW . 'px;height:' . $pxH . 'px;position:relative;background:#fffef9;border:1px solid #999;border-radius:10px;overflow:hidden;box-sizing:border-box;font-family:\'Inter\',\'Vazirmatn\',Tahoma,sans-serif;">'
+            . $inner
+            . '</div>';
+    }
+
+    /**
+     * ★ روش HTML پیش‌فرض (وقتی design_data نداریم)
+     */
+    protected static function buildCardInner(Certificate $cert, bool $includeStyle): string
+    {
+        $sizes = CertConfig::sizes();
+        $assets = CertConfig::assets();
+        $hide = CertConfig::hideDesc();
+
+        $cw    = (float) ($sizes['width']  ?? 6.5);
+        $ch    = (float) ($sizes['height'] ?? 6.5);
+        $pxW   = (int) round($cw * 96 / 2.54);
+        $pxH   = (int) round($ch * 96 / 2.54);
+        $scale = $cw / 6.5;
+
+        $imgW  = (int) round(($sizes['img_w']   ?? 120) * $scale);
+        $imgH  = (int) round(($sizes['img_h']   ?? 120) * $scale);
+        $qrS   = (int) round(($sizes['qr_size'] ?? 40)  * $scale);
+
+        $code    = e($cert->code);
+        $serial  = e($cert->serial ?? '');
+        $stoneEn = e($cert->stone_en ?? '');
+        $metalEn = e($cert->metal_en ?? $cert->metal ?? '');
+        $carat   = e($cert->metal_carat ?? '');
+        $origin  = e($cert->stone_origin ?? '');
+        $flag    = $cert->stone_flag ?? '';
+        $flagUrl = $flag ? 'https://flagcdn.com/w40/' . strtolower($flag) . '.png' : '';
+        $length  = e($cert->length_clean ?? '0');
+        $widthS  = e($cert->width_clean  ?? '0');
+        $weight  = e($cert->weight_clean ?? '0');
+        $brill   = PersianNumber::toFa($cert->brilliant_clean ?? '0');
+        $qrUrl   = $cert->qr_url;
+
+        $imgSrc = '';
+        if (!empty($cert->image_url))    $imgSrc = $cert->image_url;
+        elseif (!empty($cert->image_path)) $imgSrc = asset('storage/' . $cert->image_path);
+
+        $imgInner = $imgSrc
+            ? '<img src="' . e($imgSrc) . '" alt="" crossorigin="anonymous">'
+            : '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:32px;">💎</div>';
+
+        $bgStyle = !empty($assets['bg_image']) ? 'background-image:url(\'' . e($assets['bg_image']) . '\');' : '';
+        $logoHtml = !empty($assets['logo_image'])
+            ? '<div class="ico"><img src="' . e($assets['logo_image']) . '" alt=""></div>'
+            : '<div class="ico"><span>💎</span></div>';
+
+        $descHtml = '';
+        if (!$hide) {
+            $descHtml = !empty($assets['desc_image'])
+                ? '<img src="' . e($assets['desc_image']) . '" alt="">'
+                : '<div class="cert-auth-text">This certificate is only for authenticity of purchased product.</div>';
+        }
+
+        $flagHtml = $flagUrl
+            ? '<img src="' . e($flagUrl) . '" style="width:14px;vertical-align:middle;border-radius:2px;" alt="">'
+            : '';
+
+        $card = <<<CARD
+<div class="certificate" data-cert-code="{$code}" style="width:{$pxW}px;height:{$pxH}px;">
+  <div class="cert-bg-layer" style="{$bgStyle}"></div>
+  <div class="cert-main">
+    <div class="cert-top-section">
+      <div class="cert-right-text">
+        <div class="cert-title-script">Certificate</div>
+        <div class="cert-subtitle-script">Quality Guarantee</div>
+        <div class="cert-desc-area">{$descHtml}</div>
+        <div class="cert-sig-block">
+          <div class="cert-sig-line">Quality Guarantee</div>
+          <div class="cert-sig-label">تضمین کیفیت</div>
+        </div>
+      </div>
+      <div class="cert-img-frame-wrap" style="width:{$imgW}px;height:{$imgH}px;">
+        <div class="cert-img-frame">{$imgInner}</div>
+        <div class="cert-serial-balloon">{$serial}</div>
+      </div>
+    </div>
+    <div class="cert-qr-panel">
+      <div class="cert-logo-mini">{$logoHtml}</div>
+      <div class="cert-qr-wrap">
+        <div class="cert-qr-url">mashahirid.ir/{$code}</div>
+        <div class="cert-qr-inner">
+          <div class="cert-qr-box" style="width:{$qrS}px;height:{$qrS}px;">
+            <img src="{$qrUrl}" alt="QR">
+          </div>
+          <div class="cert-code-inline">
+            <span class="lbl">CODE</span>
+            <span class="val">{$code}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cert-table-wrap">
+      <table class="cert-bottom-table">
+        <colgroup><col style="width:25%"><col style="width:25%"><col style="width:25%"><col style="width:25%"></colgroup>
+        <tr>
+          <td class="tbl-label">Stone</td><td class="tbl-value">{$stoneEn}</td>
+          <td class="tbl-label">Metal</td><td class="tbl-value">{$metalEn} <span class="unit">{$carat}</span></td>
+        </tr>
+        <tr>
+          <td class="tbl-label">Originality</td><td class="tbl-value">{$origin} {$flagHtml}</td>
+          <td class="tbl-label">Stone S</td><td class="tbl-value">{$length}*{$widthS} <span class="unit">mm</span></td>
+        </tr>
+        <tr>
+          <td class="tbl-label">Brillant</td><td class="tbl-value">{$brill}</td>
+          <td class="tbl-label">Total W</td><td class="tbl-value">{$weight} <span class="unit">gr</span></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+CARD;
+
+        if ($includeStyle) return '<style>' . self::inlineCss() . '</style>' . $card;
+        return $card;
+    }
+
+    public static function renderBatchHtml(array $certs, int $cols = 3): string
+    {
+        $sizes = CertConfig::sizes();
+        $cw    = (float) ($sizes['width']  ?? 6.5);
+        $ch    = (float) ($sizes['height'] ?? 6.5);
+        $gap   = $cols === 1 ? 0 : round((210 - ($cols * $cw) - 6) / max(1, $cols - 1), 2);
+
+        $cards = '';
+        foreach ($certs as $cert) {
+            $cards .= '<div class="batch-card">' . self::renderCard($cert) . '</div>';
+        }
+        $css = self::inlineCss();
+
+        return '<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8">'
+            . '<link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">'
+            . '<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:wght@400;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">'
+            . '<style>' . $css . '</style>'
+            . '<style>'
+            . '@page{size:A4 portrait;margin:3mm}'
+            . '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+            . 'html,body{background:#fff;margin:0!important;padding:0!important;width:210mm}'
+            . '.cert-print-grid{display:grid;grid-template-columns:repeat(' . $cols . ',' . $cw . 'cm);'
+            . 'column-gap:' . $gap . 'cm;row-gap:2mm;justify-content:center;align-content:start;padding:0;width:100%}'
+            . '.batch-card .certificate{width:' . $cw . 'cm!important;height:' . $ch . 'cm!important;'
+            . 'min-width:' . $cw . 'cm!important;min-height:' . $ch . 'cm!important;'
+            . 'max-width:' . $cw . 'cm!important;max-height:' . $ch . 'cm!important;'
+            . 'page-break-inside:avoid;break-inside:avoid;box-shadow:none!important;'
+            . 'transform:none!important;margin:0!important;padding:0!important}'
+            . '</style>'
+            . '</head><body><div class="cert-print-grid">' . $cards . '</div></body></html>';
+    }
+
+    protected static function inlineCss(): string
+    {
+        return <<<CSS
+.certificate{background:#fffef9;color:#2c3e50;position:relative;overflow:hidden;font-family:'Inter','Vazirmatn',Tahoma,sans-serif;font-size:11px;border:1px solid #999;border-radius:10px;box-sizing:border-box;line-height:1.2}
+.certificate *{box-sizing:border-box}
+.certificate .cert-bg-layer{position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;z-index:0;opacity:.12;border-radius:10px;pointer-events:none}
+.certificate .cert-main{position:relative;z-index:3;width:100%;height:100%;padding:8px;display:flex;flex-direction:column;box-sizing:border-box;overflow:visible}
+.certificate .cert-top-section{display:flex;gap:8px;margin-bottom:4px;overflow:hidden;flex:0 0 auto}
+.certificate .cert-right-text{flex:1 1 auto;min-width:60px;display:flex;flex-direction:column;padding:2px 0 2px 4px;overflow:hidden;text-align:right}
+.certificate .cert-title-script{font-family:'Great Vibes',cursive;color:#6b4423;line-height:1;text-align:right;font-size:20px}
+.certificate .cert-subtitle-script{font-family:'Playfair Display',serif;font-size:8px;color:#6b4423;text-align:right;margin-bottom:6px;font-style:italic}
+.certificate .cert-desc-area{flex:1 1 auto;text-align:right;overflow:hidden;display:flex;align-items:center;justify-content:flex-end;min-height:0}
+.certificate .cert-desc-area img{max-width:100%;max-height:100%;object-fit:contain;margin:auto;display:block}
+.certificate .cert-auth-text{font-family:'Playfair Display',serif;color:#6b4423;line-height:1.5;text-align:right;font-size:7px}
+.certificate .cert-sig-block{text-align:right;margin-top:4px;flex-shrink:0}
+.certificate .cert-sig-line{font-family:'Great Vibes',cursive;font-size:12px;color:#6b4423;border-bottom:1px solid #6b4423;display:inline-block;padding:0 6px 2px;min-width:70px}
+.certificate .cert-sig-label{font-family:'Playfair Display',serif;font-size:6px;color:#999;margin-top:2px}
+.certificate .cert-img-frame-wrap{flex:0 0 auto;position:relative;padding:4px;border:1px solid #b8860b;border-radius:8px;background:#fff;box-sizing:border-box;max-height:100%;overflow:hidden;align-self:flex-start}
+.certificate .cert-img-frame-wrap::before{content:'';position:absolute;inset:2px;border:1px solid rgba(184,134,11,.4);border-radius:6px;pointer-events:none}
+.certificate .cert-img-frame{width:100%;height:100%;border:1.5px solid #b8860b;border-radius:6px;overflow:hidden;background:#fff;position:relative}
+.certificate .cert-img-frame img{width:100%;height:100%;object-fit:contain;display:block}
+.certificate .cert-serial-balloon{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;font-family:monospace;font-size:5px;font-weight:700;padding:2px 6px;border-radius:8px;white-space:nowrap;border:1px solid rgba(255,255,255,.25);pointer-events:none;z-index:2}
+.certificate .cert-qr-panel{display:flex;gap:6px;align-items:center;padding:4px 2px;margin-bottom:4px;justify-content:flex-end;flex-wrap:nowrap;overflow:visible;flex:0 0 auto}
+.certificate .cert-qr-wrap{display:flex;flex-direction:column;align-items:center;background:#fff;border:1px solid #0d5c63;border-radius:6px;padding:3px 4px;min-width:30px;box-sizing:border-box;flex-shrink:0}
+.certificate .cert-qr-url{color:#1a5276;font-weight:600;margin-bottom:2px;min-width:15px;font-size:6px;direction:ltr}
+.certificate .cert-qr-inner{display:flex;gap:6px;align-items:center;overflow:hidden}
+.certificate .cert-qr-box{background:#fff;border-radius:3px;overflow:hidden;flex-shrink:0;box-sizing:border-box}
+.certificate .cert-qr-box img{width:100%;height:100%;object-fit:contain;display:block}
+.certificate .cert-code-inline{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:30px}
+.certificate .cert-code-inline .lbl{font-size:6px;color:#7f8c8d;text-transform:uppercase}
+.certificate .cert-code-inline .val{font-family:monospace;font-weight:700;color:#1a5276;letter-spacing:.8px;font-size:11px}
+.certificate .cert-logo-mini{display:flex;align-items:center;gap:4px;margin-right:auto;flex-wrap:nowrap;min-width:30px;max-width:50%;overflow:hidden}
+.certificate .cert-logo-mini .ico{border:none;border-radius:4px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0;background:transparent;flex-shrink:0;box-sizing:border-box;font-size:22px}
+.certificate .cert-logo-mini .ico img{width:100%;height:100%;object-fit:contain;display:block}
+.certificate .cert-table-wrap{width:100%;flex:0 0 auto;border-radius:8px;overflow:hidden;border:1.5px solid #0d5c63;background:#fff;box-sizing:border-box;max-width:100%}
+.certificate .cert-bottom-table{width:100%;border-collapse:collapse;background:transparent;font-family:'Inter','Vazirmatn',sans-serif;table-layout:fixed;box-sizing:border-box}
+.certificate .cert-bottom-table td{border:1px solid #7fbfc4;vertical-align:middle;line-height:1.2;word-break:break-word;padding:2px 3px;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis}
+.certificate .cert-bottom-table .tbl-label{background:#0d5c63;color:#e0f7f8;font-weight:700;text-align:right;font-size:8px}
+.certificate .cert-bottom-table .tbl-value{background:#fff;color:#2c3e50;font-weight:600;text-align:right;font-size:8px}
+.certificate .cert-bottom-table .unit{float:left;font-size:6px;color:#888;font-weight:400}
+CSS;
+    }
+}

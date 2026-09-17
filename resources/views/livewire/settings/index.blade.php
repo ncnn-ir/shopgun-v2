@@ -1,0 +1,347 @@
+<div style="padding: 0 0 18px" dir="rtl">
+
+    <div style="padding: 0 18px 14px">
+        <h1 style="font-size:20px;font-weight:700">⚙️ تنظیمات</h1>
+    </div>
+
+    {{-- ═══ تب‌ها — یک خط، اسکرول افقی ═══ --}}
+    <div class="sg-settings-tabs">
+        @foreach([
+            'general'     => ['⚙️', 'عمومی', false],
+            'appearance'  => ['🎨', 'ظاهر', false],
+            'commerce'    => ['🔌', 'اتصالات', false],
+            'certificate' => ['💎', 'شناسنامه', false],
+            'label'       => ['🏷️', 'برچسب', false],
+            'labels'      => ['🎨', 'ویرایشگر برچسب', true],
+            'assets'      => ['🖼️', 'تصاویر', false],
+            'stones'      => ['💠', 'سنگ/فلز', false],
+            'logs'        => ['📜', 'لاگ', false],
+            'monitor'     => ['📊', 'رصد API', false],
+            'backup'      => ['💾', 'پشتیبان', false],
+            'health'      => ['🩺', 'سلامت', true],
+        ] as $key => $meta)
+            <button wire:click="setTab('{{ $key }}')"
+                    class="sg-settings-tab {{ $tab === $key ? 'active' : '' }}">
+                <span>{{ $meta[0] }}</span>
+                <span>{{ $meta[1] }}</span>
+                @if($meta[2])<span class="badge-new">🆕</span>@endif
+            </button>
+        @endforeach
+    </div>
+
+    {{-- ═══ محتوای تب‌ها ═══ --}}
+    <div style="padding: 0 14px">
+
+        {{-- ─────── عمومی ─────── --}}
+        @if($tab === 'general')
+            <div class="sg-settings-card">
+                <h3>اطلاعات فروشگاه</h3>
+                <div class="form-grid">
+                    <div class="field col-6">
+                        <label>🏪 نام فروشگاه</label>
+                        <input type="text" wire:model="shop_name" />
+                    </div>
+                    <div class="field col-6">
+                        <label>📱 تلفن</label>
+                        <input type="text" wire:model="shop_phone" dir="ltr" />
+                    </div>
+                    <div class="field col-12">
+                        <label>📍 آدرس</label>
+                        <textarea wire:model="shop_address" rows="2"></textarea>
+                    </div>
+                    <div class="field col-4">
+                        <label>📮 کدپستی</label>
+                        <input type="text" wire:model="shop_postal" dir="ltr" />
+                    </div>
+                    <div class="field col-4">
+                        <label>📧 ایمیل</label>
+                        <input type="email" wire:model="shop_email" dir="ltr" />
+                    </div>
+                    <div class="field col-4">
+                        <label>💵 واحد پول</label>
+                        <input type="text" wire:model="currency" />
+                    </div>
+                </div>
+                <div style="display:flex;justify-content:flex-end;padding-top:10px;border-top:1px solid var(--border)">
+                    <button wire:click="saveGeneral" class="btn btn-success">💾 ذخیره</button>
+                </div>
+            </div>
+        @endif
+
+        {{-- ─────── ظاهر ─────── --}}
+        @if($tab === 'appearance')
+            <div class="sg-settings-card">
+                <h3>ظاهر برنامه</h3>
+                <div class="form-grid">
+                    <div class="field col-6">
+                        <label>🌓 تم</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            @foreach(['light'=>'☀️ روشن','dark'=>'🌙 تیره'] as $k => $v)
+                                <button type="button" wire:click="$set('theme','{{ $k }}')"
+                                        class="btn {{ $theme === $k ? 'btn-primary' : 'btn-outline' }} btn-sm">{{ $v }}</button>
+                            @endforeach
+                        </div>
+                    </div>
+                    <div class="field col-6">
+                        <label>📐 تراکم</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            @foreach(['compact'=>'فشرده','normal'=>'معمولی','comfortable'=>'راحت'] as $k => $v)
+                                <button type="button" wire:click="$set('density','{{ $k }}')"
+                                        class="btn {{ $density === $k ? 'btn-primary' : 'btn-outline' }} btn-xs">{{ $v }}</button>
+                            @endforeach
+                        </div>
+                    </div>
+                    <div class="field col-6">
+                        <label>🎨 رنگ اصلی</label>
+                        <input type="color" wire:model.live="primary_color" style="height:42px;padding:4px;cursor:pointer" />
+                    </div>
+                    <div class="field col-6">
+                        <label>✨ رنگ تاکیدی</label>
+                        <input type="color" wire:model.live="accent_color" style="height:42px;padding:4px;cursor:pointer" />
+                    </div>
+                    <div class="field col-12">
+                        <label>🔤 فونت</label>
+                        <select wire:model.live="font_family">
+                            <option value="Vazirmatn">وزیرمتن (پیش‌فرض)</option>
+                            <option value="Tahoma">تاهوما</option>
+                            <option value="system-ui">سیستم</option>
+                            <option value="Arial">Arial</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex;justify-content:flex-end;padding-top:10px;border-top:1px solid var(--border)">
+                    <button wire:click="saveAppearance" class="btn btn-success">💾 ذخیره</button>
+                </div>
+            </div>
+        @endif
+
+        {{-- ─────── کامرس ─────── --}}
+        @if($tab === 'commerce')
+            <div class="sg-settings-card">
+                <h3>🔌 اتصال به WooCommerce</h3>
+                <div class="form-grid">
+                    <div class="field col-12">
+                        <label>🌐 آدرس سایت</label>
+                        <input type="text" wire:model="commerce_url" dir="ltr" placeholder="https://yoursite.com" />
+                    </div>
+                    <div class="field col-6">
+                        <label>🔑 Consumer Key</label>
+                        <input type="text" wire:model="commerce_key" dir="ltr" />
+                    </div>
+                    <div class="field col-6">
+                        <label>🔐 Consumer Secret</label>
+                        <input type="password" wire:model="commerce_secret" dir="ltr" />
+                    </div>
+                </div>
+                @if(!empty($commerce_test_result))
+                    <div style="padding:12px;border-radius:10px;margin:12px 0;background:{{ $commerce_test_result['ok'] ? 'rgba(39,174,96,.1)' : 'rgba(231,76,60,.1)' }};color:{{ $commerce_test_result['ok'] ? 'var(--success)' : 'var(--danger)' }};font-weight:700">
+                        {{ $commerce_test_result['ok'] ? '✅' : '❌' }} {{ $commerce_test_result['message'] }}
+                    </div>
+                @endif
+                <div style="display:flex;gap:6px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--border)">
+                    <button wire:click="saveCommerce" class="btn btn-primary">💾 ذخیره</button>
+                    <button wire:click="testCommerce" class="btn btn-secondary">🔌 تست اتصال</button>
+                    <button wire:click="syncProducts" class="btn btn-success">📥 سینک محصولات</button>
+                </div>
+            </div>
+        @endif
+
+        {{-- ─────── شناسنامه ─────── --}}
+        @if($tab === 'certificate')
+            <div class="sg-settings-card">
+                <h3>📏 اندازه شناسنامه</h3>
+                <div class="form-grid">
+                    <div class="field col-6">
+                        <label>📐 عرض (cm)</label>
+                        <input type="number" step="0.1" wire:model="cert_width" dir="ltr" />
+                    </div>
+                    <div class="field col-6">
+                        <label>📐 ارتفاع (cm)</label>
+                        <input type="number" step="0.1" wire:model="cert_height" dir="ltr" />
+                    </div>
+                </div>
+                <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+                    <button wire:click="setCertPreset(6.5,6.5)" class="btn btn-outline btn-sm">۶.۵×۶.۵</button>
+                    <button wire:click="setCertPreset(7,7)" class="btn btn-outline btn-sm">۷×۷</button>
+                    <button wire:click="setCertPreset(8,6)" class="btn btn-outline btn-sm">۸×۶</button>
+                </div>
+                <div style="display:flex;justify-content:flex-end;padding-top:10px;border-top:1px solid var(--border)">
+                    <button wire:click="saveCertificate" class="btn btn-success">💾 ذخیره</button>
+                </div>
+            </div>
+        @endif
+
+        {{-- ─────── برچسب ─────── --}}
+        @if($tab === 'label')
+            <div class="sg-settings-card">
+                <h3>📐 اندازه برچسب</h3>
+                <div class="form-grid">
+                    <div class="field col-6">
+                        <label>📐 عرض (mm)</label>
+                        <input type="number" wire:model="label_width" dir="ltr" />
+                    </div>
+                    <div class="field col-6">
+                        <label>📐 ارتفاع (mm)</label>
+                        <input type="number" wire:model="label_height" dir="ltr" />
+                    </div>
+                </div>
+                <div style="display:flex;justify-content:flex-end;padding-top:10px;border-top:1px solid var(--border)">
+                    <button wire:click="saveLabel" class="btn btn-success">💾 ذخیره</button>
+                </div>
+            </div>
+        @endif
+
+        {{-- ─────── ویرایشگر برچسب ─────── --}}
+        @if($tab === 'labels')
+            <livewire:settings.labels />
+        @endif
+
+        {{-- ─────── تصاویر ─────── --}}
+        @if($tab === 'assets')
+            <div class="sg-settings-card">
+                <h3>🖼️ پس‌زمینه شناسنامه</h3>
+                @if($bg_image)
+                    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                        <img src="{{ $bg_image }}" style="max-width:120px;border-radius:10px;border:2px solid var(--gold)">
+                        <button wire:click="removeBg" class="btn btn-danger btn-sm">حذف</button>
+                    </div>
+                @endif
+                <input type="file" wire:model="bg_image" accept="image/*" class="form-control">
+            </div>
+        @endif
+
+        {{-- ─────── سنگ/فلز ─────── --}}
+        @if($tab === 'stones')
+            <div class="sg-settings-card">
+                <h3>💎 سنگ‌های قیمتی ({{ \App\Support\PersianNumber::toFa(count($stones_list)) }})</h3>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-bottom:14px">
+                    @foreach($stones_list as $s)
+                        <div style="background:var(--bg-card);border:2px solid var(--border);border-radius:10px;padding:8px 4px;text-align:center;position:relative">
+                            <button wire:click="removeStone({{ $s['id'] }})" wire:confirm="حذف شود؟"
+                                    style="position:absolute;top:-6px;left:-6px;width:20px;height:20px;border-radius:50%;background:var(--danger);color:#fff;border:none;cursor:pointer;font-size:11px">✕</button>
+                            <div style="font-size:24px">{{ $s['icon'] ?? '💎' }}</div>
+                            <div style="font-size:10px;font-weight:700;margin-top:4px">{{ $s['name'] }}</div>
+                            <div style="font-size:9px;opacity:.6">{{ $s['origin'] ?? '' }}</div>
+                        </div>
+                    @endforeach
+                </div>
+                <h3 style="margin-top:20px">➕ افزودن سنگ</h3>
+                <div class="form-grid">
+                    <div class="field col-6">
+                        <label>نام فارسی</label>
+                        <input type="text" wire:model="new_stone_name" />
+                    </div>
+                    <div class="field col-6">
+                        <label>نام انگلیسی</label>
+                        <input type="text" wire:model="new_stone_en" dir="ltr" />
+                    </div>
+                </div>
+                <button wire:click="addStone" class="btn btn-primary">➕ افزودن</button>
+
+                <h3 style="margin-top:30px">⚙️ فلزات ({{ \App\Support\PersianNumber::toFa(count($metals_list)) }})</h3>
+                @foreach($metals_list as $m)
+                    <div style="padding:8px 12px;background:var(--bg-soft);border-radius:8px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+                        <span>⚙️ <strong>{{ $m['name'] }}</strong> — {{ $m['carat'] ?? '-' }}</span>
+                        <button wire:click="removeMetal({{ $m['id'] }})" wire:confirm="حذف شود؟" class="btn btn-danger btn-sm">حذف</button>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
+        {{-- ─────── لاگ ─────── --}}
+        @if($tab === 'logs')
+            <div class="sg-settings-card">
+                <h3>📜 لاگ تغییرات</h3>
+                <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+                    <input type="text" wire:model.live.debounce.400ms="log_search" placeholder="🔍 جستجو..." style="flex:1;min-width:200px" class="form-control">
+                    <button wire:click="clearLogs" wire:confirm="پاک شوند؟" class="btn btn-danger btn-sm">🗑️</button>
+                </div>
+                <div style="max-height:500px;overflow-y:auto">
+                    @forelse($logs as $log)
+                        <div style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:11.5px">
+                            <strong>{{ $log['description'] }}</strong>
+                            <span style="opacity:.6"> · {{ $log['event'] }}</span>
+                            <div style="font-family:monospace;font-size:10px;opacity:.5;margin-top:2px">
+                                {{ \App\Support\PersianDate::format($log['created_at'], 'Y/m/d H:i') }} · {{ $log['causer'] }}
+                            </div>
+                        </div>
+                    @empty
+                        <p style="text-align:center;padding:20px;opacity:.5">لاگی نیست</p>
+                    @endforelse
+                </div>
+            </div>
+        @endif
+
+        {{-- ─────── رصد API ─────── --}}
+        @if($tab === 'monitor')
+            <div class="sg-settings-card">
+                <h3>📊 رصد API</h3>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+                    <div style="padding:12px;background:rgba(41,128,185,.1);border-radius:10px;text-align:center">
+                        <div style="font-size:20px;font-weight:800;color:var(--primary)">{{ \App\Support\PersianNumber::toFa($monitor_stats['total'] ?? 0) }}</div>
+                        <div style="font-size:11px;opacity:.7">کل</div>
+                    </div>
+                    <div style="padding:12px;background:rgba(39,174,96,.1);border-radius:10px;text-align:center">
+                        <div style="font-size:20px;font-weight:800;color:var(--success)">{{ \App\Support\PersianNumber::toFa($monitor_stats['today'] ?? 0) }}</div>
+                        <div style="font-size:11px;opacity:.7">امروز</div>
+                    </div>
+                    <div style="padding:12px;background:rgba(231,76,60,.1);border-radius:10px;text-align:center">
+                        <div style="font-size:20px;font-weight:800;color:var(--danger)">{{ \App\Support\PersianNumber::toFa($monitor_stats['errors'] ?? 0) }}</div>
+                        <div style="font-size:11px;opacity:.7">خطا</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:14px">
+                    <input type="text" wire:model.live.debounce.400ms="monitor_filter" placeholder="🔍 فیلتر..." style="flex:1" class="form-control">
+                    <button wire:click="refreshMonitor" class="btn btn-outline btn-sm">🔄</button>
+                    <button wire:click="clearMonitor" wire:confirm="پاک شوند؟" class="btn btn-danger btn-sm">🗑️</button>
+                </div>
+                <div style="max-height:500px;overflow-y:auto">
+                    @forelse($monitor_logs as $log)
+                        <div style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:11px">
+                            <div style="display:flex;gap:8px;align-items:center">
+                                <span style="padding:2px 6px;border-radius:6px;background:{{ ($log['status_code'] ?? 0) >= 200 && ($log['status_code'] ?? 0) < 300 ? 'var(--success)' : 'var(--danger)' }};color:#fff;font-weight:700;font-size:10px;font-family:monospace">{{ $log['status_code'] ?? '—' }}</span>
+                                <span style="font-family:monospace;font-weight:700">{{ $log['method'] }}</span>
+                                <span style="margin-right:auto;font-family:monospace;opacity:.5;font-size:10px">{{ $log['created_at'] }}</span>
+                            </div>
+                            <div style="font-family:monospace;font-size:10px;opacity:.7;overflow:hidden;text-overflow:ellipsis" dir="ltr">{{ $log['url'] }}</div>
+                        </div>
+                    @empty
+                        <p style="text-align:center;padding:20px;opacity:.5">لاگی نیست</p>
+                    @endforelse
+                </div>
+            </div>
+        @endif
+
+        {{-- ─────── پشتیبان ─────── --}}
+        @if($tab === 'backup')
+            <div class="sg-settings-card">
+                <h3>💾 پشتیبان‌گیری</h3>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button wire:click="createBackup" class="btn btn-primary">➕ پشتیبان جدید</button>
+                    <button wire:click="exportJson" class="btn btn-secondary">📥 خروجی JSON</button>
+                </div>
+                <h3 style="margin-top:20px">📊 اطلاعات سیستم</h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                    @foreach([
+                        ['🖥️', 'PHP', $stats['php']],
+                        ['⚡', 'Laravel', $stats['laravel']],
+                        ['📦', 'سفارشات', \App\Support\PersianNumber::toFa($stats['orders'])],
+                        ['👥', 'مشتریان', \App\Support\PersianNumber::toFa($stats['customers'])],
+                        ['💎', 'شناسنامه‌ها', \App\Support\PersianNumber::toFa($stats['certificates'])],
+                        ['🛍️', 'محصولات', \App\Support\PersianNumber::toFa($stats['products'])],
+                    ] as $item)
+                        <div style="padding:10px;background:var(--bg-soft);border-radius:8px;display:flex;justify-content:space-between;font-size:12px">
+                            <span>{{ $item[0] }} {{ $item[1] }}</span>
+                            <strong style="font-family:monospace">{{ $item[2] }}</strong>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        {{-- ─────── سلامت ─────── --}}
+        @if($tab === 'health')
+            <livewire:settings.health />
+        @endif
+    </div>
+</div>

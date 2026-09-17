@@ -1,0 +1,191 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Certificate;
+use App\Support\CertConfig;
+
+class CertRenderer
+{
+    public static function renderHtml(Certificate $cert, array $opts = []): string
+    {
+        $sizes  = CertConfig::sizes();
+        $assets = CertConfig::assets();
+        $hide   = CertConfig::hideDesc();
+        $design = $cert->design_or_default;
+
+        // ابعاد پیکسلی با کیفیت بالا (300dpi)
+        $pxW = (int) round($sizes['width']  * 300 / 2.54);
+        $pxH = (int) round($sizes['height'] * 300 / 2.54);
+
+        $scale = $sizes['width'] / 6.5;
+
+        $imgW  = (int) round($sizes['img_w']  * $scale * 1.5);
+        $imgH  = (int) round($sizes['img_h']  * $scale * 1.5);
+        $qrS   = (int) round($sizes['qr_size'] * $scale * 1.5);
+        $logoW = (int) round($sizes['logo_w'] * $scale * 1.5);
+        $logoH = (int) round($sizes['logo_h'] * $scale * 1.5);
+
+        $bgStyle = $assets['bg_image'] ? "background-image:url('{$assets['bg_image']}');" : '';
+
+        $imgSrc = $cert->image_path ? asset('storage/' . $cert->image_path) : '';
+        $qrUrl  = $cert->qr_url;
+
+        $vars = [
+            '{code}'      => $cert->code,
+            '{serial}'    => $cert->serial ?? '',
+            '{stoneName}' => $cert->stone_name ?? '',
+            '{stoneEn}'   => $cert->stone_en ?? '',
+            '{origin}'    => $cert->stone_origin ?? '',
+            '{metal}'     => $cert->metal ?? '',
+            '{metalEn}'   => $cert->metal_en ?? $cert->metal ?? '',
+            '{carat}'     => $cert->metal_carat ?? '',
+            '{length}'    => $cert->length_clean,
+            '{width}'     => $cert->width_clean,
+            '{weight}'    => $cert->weight_clean,
+            '{brilliant}' => $cert->brilliant_clean,
+        ];
+
+        $elementsHtml = '';
+        if (! empty($design['elements'])) {
+            foreach ($design['elements'] as $el) {
+                $x = (int) ($el['x'] ?? 0) * 1.5;
+                $y = (int) ($el['y'] ?? 0) * 1.5;
+
+                if (($el['type'] ?? '') === 'text') {
+                    $text = strtr($el['text'] ?? '', $vars);
+                    $fs   = (int) ((($el['fontSize'] ?? 14)) * 1.5);
+                    $fill = $el['fill'] ?? '#334155';
+                    $fw   = $el['fontWeight'] ?? 'normal';
+                    $elementsHtml .= "<div style='position:absolute;left:{$x}px;top:{$y}px;font-size:{$fs}px;color:{$fill};font-weight:{$fw};font-family:Tahoma,sans-serif;white-space:nowrap;'>{$text}</div>";
+                } elseif (($el['type'] ?? '') === 'qr') {
+                    $size = (int) (($el['size'] ?? 100) * 1.5);
+                    $elementsHtml .= "<img src='{$qrUrl}' style='position:absolute;left:{$x}px;top:{$y}px;width:{$size}px;height:{$size}px;' />";
+                }
+            }
+        }
+
+        // Fallback
+        if (empty($elementsHtml)) {
+            $elementsHtml = self::fallbackElements($cert, $sizes);
+        }
+
+        $qrPanel = '';
+        if ($qrS > 0) {
+            $qrPanel = "<div style='position:absolute;bottom:8px;left:8px;display:flex;gap:6px;align-items:center;'>";
+            if ($assets['logo_image']) {
+                $qrPanel .= "<img src='{$assets['logo_image']}' style='width:{$logoW}px;height:{$logoH}px;object-fit:contain;' />";
+            }
+            $qrPanel .= "<img src='{$qrUrl}' style='width:{$qrS}px;height:{$qrS}px;' />";
+            $qrPanel .= "</div>";
+        }
+
+        $imgPanel = '';
+        if ($imgSrc) {
+            $imgPanel = "<img src='{$imgSrc}' style='position:absolute;top:8px;right:8px;width:{$imgW}px;height:{$imgH}px;object-fit:contain;border:2px solid #b8860b;border-radius:6px;background:#fff;' />";
+        }
+
+        $descPanel = '';
+        if (! $hide && $assets['desc_image']) {
+            $descPanel = "<img src='{$assets['desc_image']}' style='position:absolute;bottom:8px;right:8px;max-width:40%;max-height:30%;object-fit:contain;' />";
+        }
+
+        // ⚠️ همه رنگ‌ها hex — نه oklch
+        return <<<HTML
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Certificate {$cert->code}</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #ffffff; font-family: Tahoma, Arial, sans-serif; }
+    .cert {
+        position: relative;
+        width: {$pxW}px;
+        height: {$pxH}px;
+        background-color: #fffef9;
+        {$bgStyle}
+        background-size: cover;
+        background-position: center;
+        border: 3px solid #b8860b;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .cert .content {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        padding: 12px;
+    }
+</style>
+</head>
+<body>
+<div class="cert">
+    <div class="content">
+        {$elementsHtml}
+        {$imgPanel}
+        {$descPanel}
+        {$qrPanel}
+    </div>
+</div>
+</body>
+</html>
+HTML;
+    }
+
+    protected static function fallbackElements(Certificate $cert, array $sizes): string
+    {
+        $titleFs = (int) ($sizes['title_font'] * 1.8);
+        $h = '';
+        $h .= "<div style='position:absolute;top:12px;right:12px;font-size:{$titleFs}px;color:#6b4423;font-weight:bold;font-family:Georgia,serif;'>Certificate</div>";
+        $h .= "<div style='position:absolute;top:75px;left:12px;font-size:22px;color:#0369a1;font-weight:bold;'>" . htmlspecialchars($cert->stone_en ?: $cert->stone_name) . "</div>";
+        $h .= "<div style='position:absolute;top:110px;left:12px;font-size:16px;color:#334155;'>" . htmlspecialchars($cert->metal) . " (" . htmlspecialchars($cert->metal_carat) . ")</div>";
+        $h .= "<div style='position:absolute;top:138px;left:12px;font-size:14px;color:#334155;'>" . $cert->length_clean . "×" . $cert->width_clean . " mm</div>";
+        $h .= "<div style='position:absolute;top:162px;left:12px;font-size:14px;color:#334155;'>Weight: " . $cert->weight_clean . " gr</div>";
+        $h .= "<div style='position:absolute;top:195px;left:12px;font-size:18px;color:#b45309;font-weight:bold;font-family:monospace;'>#" . htmlspecialchars($cert->code) . "</div>";
+        return $h;
+    }
+
+    protected static function fmt($v): string
+    {
+        if ($v === null || $v === '') return '0';
+        $f = (float) $v;
+        if (floor($f) == $f) return (string) (int) $f;
+        return rtrim(rtrim(number_format($f, 2, '.', ''), '0'), '.');
+    }
+
+    public static function renderBatchHtml(array $certs, int $cols = 3): string
+    {
+        $sizes = CertConfig::sizes();
+        $cssW  = $sizes['width'];
+        $cssH  = $sizes['height'];
+        $gap = $cols === 1 ? 0 : round((210 - ($cols * $cssW) - 6) / max(1, $cols - 1), 2);
+
+        $cards = '';
+        foreach ($certs as $cert) {
+            $html = self::renderHtml($cert);
+            if (preg_match('/<body>(.*)<\/body>/s', $html, $m)) $bodyContent = $m[1];
+            else $bodyContent = $html;
+            $cards .= "<div class='batch-card'>{$bodyContent}</div>";
+        }
+
+        return <<<HTML
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { background: #fff; }
+    .grid { display: grid; grid-template-columns: repeat({$cols}, {$cssW}cm); column-gap: {$gap}cm; row-gap: 3mm; justify-content: center; }
+    .batch-card .cert { width: {$cssW}cm !important; height: {$cssH}cm !important; page-break-inside: avoid; }
+</style>
+</head>
+<body>
+<div class="grid">{$cards}</div>
+</body>
+</html>
+HTML;
+    }
+}

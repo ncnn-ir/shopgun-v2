@@ -1,0 +1,70 @@
+<?php
+
+namespace App\Livewire\Settings;
+
+use App\Models\AppSetting;
+use Livewire\Component;
+
+class Labels extends Component
+{
+    public int $width = 100;
+    public int $height = 50;
+    public string $template = 'default';
+    public array $fonts = [
+        'customer' => 16, 'insurance' => 12, 'address' => 14,
+        'contactLabel' => 11, 'contactValue' => 16,
+        'meta' => 11, 'footer' => 10,
+    ];
+    public bool $showInsurance = true;
+    public bool $showPostal = true;
+    public bool $showPhone = true;
+
+    // نمونه پیش‌نمایش
+    public string $sampleName = 'علی رضایی';
+    public string $sampleAddress = 'نیشابور - خیابان امام - پلاک ۱۲، طبقه ۲';
+    public string $samplePhone = '09151234567';
+    public string $samplePostal = '9317613441';
+    public string $sampleInsurance = '۲۵٬۰۰۰';
+    public string $sampleOrder = '317401';
+
+    public function mount(): void
+    {
+        $this->width  = (int) AppSetting::get('label_width', 100);
+        $this->height = (int) AppSetting::get('label_height', 50);
+        $fonts = AppSetting::get('label_fonts', null);
+        if (is_array($fonts)) $this->fonts = array_merge($this->fonts, $fonts);
+    }
+
+    public function save(): void
+    {
+        AppSetting::putMany([
+            'label_width'  => $this->width,
+            'label_height' => $this->height,
+            'label_fonts'  => $this->fonts,
+            'label_template' => $this->template,
+            'label_show_insurance' => $this->showInsurance,
+            'label_show_postal' => $this->showPostal,
+            'label_show_phone' => $this->showPhone,
+        ], 'label');
+
+        $this->dispatch('notify', type: 'success', message: 'تنظیمات برچسب ذخیره شد ✅');
+    }
+
+    public function reset(): void
+    {
+        $this->width = 100;
+        $this->height = 50;
+        $this->fonts = [
+            'customer' => 16, 'insurance' => 12, 'address' => 14,
+            'contactLabel' => 11, 'contactValue' => 16,
+            'meta' => 11, 'footer' => 10,
+        ];
+        $this->dispatch('notify', type: 'info', message: 'بازنشانی شد');
+    }
+
+    public function render()
+    {
+        return view('livewire.settings.labels')
+            ->layout('components.layouts.app');
+    }
+}

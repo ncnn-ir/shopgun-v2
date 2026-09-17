@@ -1,0 +1,120 @@
+<div dir="rtl">
+
+    <div style="padding: 12px 14px 0">
+        <div class="filter-bar">
+            <div class="field">
+                <label>🔍 جستجو</label>
+                <input type="text" wire:model.live.debounce.400ms="search" placeholder="شماره، نام، تلفن..." />
+            </div>
+
+            <div class="field">
+                <label>📊 وضعیت</label>
+                <select wire:model.live="filterStatus">
+                    <option value="">همه</option>
+                    <option value="pending">📝 ثبت سفارش</option>
+                    <option value="final-check">🔍 چک نهایی</option>
+                    <option value="courier">🚚 تحویل مامور</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>📅 از تاریخ</label>
+                <livewire:jalali-datepicker wire:model="dateFrom" :hasTime="false" placeholder="از تاریخ" wire:key="jalali-from" />
+            </div>
+
+            <div class="field">
+                <label>📅 تا تاریخ</label>
+                <livewire:jalali-datepicker wire:model="dateTo" :hasTime="false" placeholder="تا تاریخ" wire:key="jalali-to" />
+            </div>
+
+            <div class="field">
+                <label style="opacity:0">عملیات</label>
+                <div style="display:flex;gap:6px">
+                    <button wire:click="clearFilters" class="btn btn-outline btn-sm" title="پاک کردن">✕</button>
+                    <button onclick="Livewire.dispatch('open-order-form')" class="btn btn-primary btn-sm">➕ جدید</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="padding: 0 14px 14px">
+        <a href="{{ route('orders.table') }}" wire:navigate class="btn btn-primary btn-sm">
+            📊 جدول حرفه‌ای (PowerGrid با فیلتر ستونی)
+        </a>
+    </div>
+
+    <div class="sg-table-container">
+        <div class="sg-table-header">
+            <h2>📦 سفارشات <span style="background:var(--gold);color:var(--primary);padding:2px 10px;border-radius:20px;font-size:10.5px;font-weight:700">{{ \App\Support\PersianNumber::toFa($orders->total()) }}</span></h2>
+        </div>
+
+        <div class="sg-table-scroll">
+            <table class="sg-table">
+                <thead>
+                    <tr>
+                        <th style="width:36px"><input type="checkbox" wire:click="selectAllVisible"></th>
+                        <th wire:click="sortBy('order_number')" class="sortable {{ $sortField === 'order_number' ? 'sorted-' . $sortDirection : '' }}"># سفارش</th>
+                        <th wire:click="sortBy('customer_name')" class="sortable {{ $sortField === 'customer_name' ? 'sorted-' . $sortDirection : '' }}">مشتری</th>
+                        <th>تلفن</th>
+                        <th>محصولات</th>
+                        <th wire:click="sortBy('insurance')" class="sortable {{ $sortField === 'insurance' ? 'sorted-' . $sortDirection : '' }}">بیمه</th>
+                        <th>وضعیت</th>
+                        <th wire:click="sortBy('created_at')" class="sortable {{ $sortField === 'created_at' ? 'sorted-' . $sortDirection : '' }}">تاریخ</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($orders as $order)
+                        <tr wire:key="ord-{{ $order->id }}">
+                            <td><input type="checkbox" wire:click="toggleSelect({{ $order->id }})" @if(in_array($order->id, $selected)) checked @endif></td>
+                            <td><strong>#{{ $order->order_number }}</strong></td>
+                            <td>{{ $order->customer_name ?? '—' }}</td>
+                            <td dir="ltr" style="font-family:monospace;font-size:11px">{{ $order->phone ?? '—' }}</td>
+                            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">
+                                @if($order->items->count())
+                                    {{ $order->items->pluck('title')->take(2)->implode('، ') }}
+                                    @if($order->items->count() > 2) <span style="opacity:.5">+{{ $order->items->count() - 2 }}</span> @endif
+                                @else — @endif
+                            </td>
+                            <td>{{ \App\Support\PersianNumber::toFa(number_format((float) $order->insurance)) }}</td>
+                            <td>
+                                @php $st = ['pending'=>['📝','ثبت'],'final-check'=>['🔍','چک'],'courier'=>['🚚','مامور']][$order->status ?? 'pending'] ?? ['📝','ثبت']; @endphp
+                                <span class="sg-status-badge {{ $order->status ?? 'pending' }}" wire:click="cycleStatus({{ $order->id }})" style="cursor:pointer">
+                                    {{ $st[0] }} {{ $st[1] }}
+                                </span>
+                            </td>
+                            <td style="font-size:10.5px;font-family:monospace">{{ \App\Support\PersianDate::format($order->created_at, 'Y/m/d') }}</td>
+                            <td>
+                                <div class="sg-action-btns">
+                                    <button onclick="Livewire.dispatch('open-order-view', {orderId: {{ $order->id }}})" class="sg-action-btn view">👁️</button>
+                                    <button onclick="Livewire.dispatch('open-order-form', {orderId: {{ $order->id }}})" class="sg-action-btn edit">✏️</button>
+                                    <button wire:click="delete({{ $order->id }})" wire:confirm="حذف شود؟" class="sg-action-btn delete">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="9" style="text-align:center;padding:40px;opacity:.5">
+                            <div style="font-size:44px">📦</div>
+                            <p>سفارشی نیست</p>
+                        </td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div style="padding:14px">{{ $orders->links() }}</div>
+    </div>
+
+    @if(count($selected) > 0)
+        <div style="position:fixed;bottom:80px;left:20px;right:20px;background:var(--bg-card);border:2px dashed var(--gold);border-radius:14px;padding:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;z-index:50;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+            <span style="font-weight:700;color:var(--gold-dark)">{{ \App\Support\PersianNumber::toFa(count($selected)) }} مورد</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button wire:click="bulkStatus('pending')" class="btn btn-outline btn-sm">📝 ثبت</button>
+                <button wire:click="bulkStatus('final-check')" class="btn btn-outline btn-sm">🔍 چک</button>
+                <button wire:click="bulkStatus('courier')" class="btn btn-outline btn-sm">🚚 مامور</button>
+                <button wire:click="bulkDelete" wire:confirm="حذف شوند؟" class="btn btn-danger btn-sm">🗑️</button>
+                <button wire:click="clearSelection" class="btn btn-ghost btn-sm">✕</button>
+            </div>
+        </div>
+    @endif
+</div>

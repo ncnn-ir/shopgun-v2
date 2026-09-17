@@ -1,0 +1,80 @@
+<?php
+
+namespace App\Livewire\Reports;
+
+use App\Models\Channel;
+use App\Models\Customer;
+use App\Models\Order;
+use Livewire\Component;
+
+class Index extends Component
+{
+    public string $range = '7days';
+
+    public function setRange(string $r): void
+    {
+        $this->range = $r;
+    }
+
+    public function render()
+    {
+        $start = match ($this->range) {
+            'today'  => now()->startOfDay(),
+            '7days'  => now()->subDays(7)->startOfDay(),
+            '30days' => now()->subDays(30)->startOfDay(),
+            'year'   => now()->startOfYear(),
+            default  => now()->subDays(7)->startOfDay(),
+        };
+
+        $orders = Order::where('created_at', '>=', $start)->get();
+        $totalCount  = $orders->count();
+        $totalAmount = (float) $orders->sum('amount');
+        $avgAmount   = $totalCount > 0 ? $totalAmount / $totalCount : 0;
+
+        $days = match ($this->range) {
+            'today' => 1, '7days' => 7, '30days' => 30, 'year' => 12, default => 7,
+        };
+
+        $dailyLabels = []; $dailyCounts = []; $dailyAmounts = [];
+
+        if ($this->range === 'year') {
+            for ($i = 11; $i >= 0; $i--) {
+                $ms = now()->subMonths($i)->startOfMonth();
+                $me = now()->subMonths($i)->endOfMonth();
+                $dailyLabels[]  = $ms->format('Y/m');
+                $dailyCounts[]  = Order::whereBetween('created_at', [$ms, $me])->count();
+                $dailyAmounts[] = (float) Order::whereBetween('created_at', [$ms, $me])->sum('amount');
+            }
+        } else {
+            for ($i = $days - 1; $i >= 0; $i--) {
+                $date = now()->subDays($i);
+                $ds = $date->copy()->startOfDay();
+                $de = $date->copy()->endOfDay();
+                $dailyLabels[]  = $date->format('m/d');
+                $dailyCounts[]  = Order::whereBetween('created_at', [$ds, $de])->count();
+                $dailyAmounts[] = (float) Order::whereBetween('created_at', [$ds, $de])->sum('amount');
+            }
+        }
+
+        $byStatus = [
+            Order::where('status', 'pending')->where('created_at', '>=', $start)->count(),
+            Order::where('status', 'final-check')->where('created_at', '>=', $start)->count(),
+            Order::where('status', 'courier')->where('created_at', '>=', $start)->count(),
+        ];
+
+        $channels = Channel::withCount(['orders' => fn ($q) => $q->where('created_at', '>=', $start)])
+            ->orderByDesc('orders_count')->get();
+
+        $channelLabels = $channels->pluck('name')->toArray();
+        $channelCounts = $channels->pluck('orders_count')->toArray();
+        $channelColors = $channels->pluck('color')->toArray();
+
+        $topCustomers = Customer::has('orders')->withCount('orders')->orderByDesc('orders_count')->limit(5)->get();
+
+        return view('livewire.reports.index', compact(
+            'totalCount', 'totalAmount', 'avgAmount',
+            'dailyLabels', 'dailyCounts', 'dailyAmounts',
+            'byStatus', 'channelLabels', 'channelCounts', 'channelColors', 'topCustomers'
+        ))->layout('components.layouts.app');
+    }
+}

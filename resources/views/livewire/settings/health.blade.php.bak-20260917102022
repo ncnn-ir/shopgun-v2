@@ -1,0 +1,180 @@
+<div class="p-4 md:p-6 space-y-4" dir="rtl">
+
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <h1 class="text-xl md:text-2xl font-bold">🩺 سلامت سیستم</h1>
+            <p class="text-xs text-base-content/60 mt-1">نمای کلی از وضعیت پکیج‌ها، دیتابیس و صفحات</p>
+        </div>
+        <button wire:click="refresh" class="btn btn-primary btn-sm">
+            <span wire:loading.remove wire:target="refresh">🔄 بروزرسانی</span>
+            <span wire:loading wire:target="refresh">⏳...</span>
+        </button>
+    </div>
+
+    {{-- ═══ لینک‌های سریع ═══ --}}
+    <div class="card bg-base-100 shadow border border-base-300">
+        <div class="card-body p-4">
+            <h2 class="font-bold text-base mb-3 flex items-center gap-2">
+                🚀 دسترسی سریع به بخش‌ها
+            </h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                @foreach($features as $f)
+                    @if($f['ok'])
+                        <a href="{{ $f['url'] }}" wire:navigate
+                           class="relative block p-3 rounded-lg border-2 border-success/30 bg-success/5 hover:bg-success/10 hover:shadow-md transition">
+                            @if($f['new'] ?? false)
+                                <span class="absolute -top-2 -left-2 badge badge-warning badge-xs font-bold">🆕</span>
+                            @endif
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-2xl">{{ $f['icon'] }}</span>
+                                <span class="badge badge-success badge-xs">✓</span>
+                            </div>
+                            <div class="font-bold text-sm">{{ $f['label'] }}</div>
+                            <div class="text-[10px] text-base-content/60 mt-0.5">{{ $f['desc'] }}</div>
+                        </a>
+                    @else
+                        <div class="relative block p-3 rounded-lg border-2 border-error/30 bg-error/5 cursor-not-allowed opacity-60">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-2xl">{{ $f['icon'] }}</span>
+                                <span class="badge badge-error badge-xs">✕</span>
+                            </div>
+                            <div class="font-bold text-sm">{{ $f['label'] }}</div>
+                            <div class="text-[10px] text-base-content/60 mt-0.5">ساخته نشده</div>
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══ اطلاعات سیستم ═══ --}}
+    <div class="card bg-base-100 shadow border border-base-300">
+        <div class="card-body p-4">
+            <h2 class="font-bold text-base mb-3">💻 اطلاعات سیستم</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                @foreach($system as $s)
+                    <div class="p-3 rounded-lg {{ $s['ok'] ? 'bg-success/5 border border-success/30' : 'bg-warning/5 border border-warning/30' }} flex items-center justify-between">
+                        <div class="min-w-0">
+                            <div class="text-[10px] text-base-content/60">{{ $s['label'] }}</div>
+                            <div class="font-mono font-bold text-xs mt-0.5 truncate" dir="ltr">{{ $s['value'] }}</div>
+                        </div>
+                        <span class="text-lg shrink-0">{{ $s['ok'] ? '✅' : '⚠️' }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══ جداول دیتابیس ═══ --}}
+    <div class="card bg-base-100 shadow border border-base-300">
+        <div class="card-body p-4">
+            <h2 class="font-bold text-base mb-3">🗄️ جداول دیتابیس ({{ count($database) }} جدول)</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                @foreach($database as $t)
+                    <div class="p-2 rounded-lg {{ $t['exists'] ? 'bg-success/5 border border-success/30' : 'bg-base-200/50 border border-base-300 opacity-60' }}">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="min-w-0 flex-1">
+                                <div class="font-bold text-xs truncate">{{ $t['label'] }}</div>
+                                <div class="font-mono text-[10px] text-base-content/50 truncate" dir="ltr">{{ $t['name'] }}</div>
+                            </div>
+                            @if($t['exists'])
+                                <span class="badge badge-success badge-sm font-mono shrink-0">
+                                    {{ \App\Support\PersianNumber::toFa(number_format($t['count'])) }}
+                                </span>
+                            @else
+                                <span class="badge badge-error badge-xs shrink-0">نبود</span>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══ پکیج‌ها ═══ --}}
+    <div class="card bg-base-100 shadow border border-base-300">
+        <div class="card-body p-4">
+            <h2 class="font-bold text-base mb-3">📦 پکیج‌های نصب‌شده</h2>
+
+            @php
+                $groupLabels = [
+                    'core'   => '🏗️ هسته',
+                    'auth'   => '🔐 احراز هویت',
+                    'table'  => '📊 جداول',
+                    'log'    => '📜 لاگ',
+                    'media'  => '🎨 رسانه',
+                    'form'   => '📝 فرم',
+                    'ui'     => '🎨 رابط کاربری',
+                    'export' => '📤 خروجی',
+                    'debug'  => '🐛 دیباگ',
+                    'update' => '🔄 بروزرسانی',
+                    'backup' => '💾 پشتیبان',
+                    'js'     => '🟨 JavaScript',
+                ];
+            @endphp
+
+            @foreach($packages as $group => $items)
+                <div class="mb-4">
+                    <div class="text-xs font-bold text-base-content/70 mb-2 pb-1 border-b border-base-300">
+                        {{ $groupLabels[$group] ?? ('📦 '.$group) }}
+                        <span class="badge badge-ghost badge-xs mr-2">
+                            {{ \App\Support\PersianNumber::toFa(count($items)) }}
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        @foreach($items as $p)
+                            <div class="flex items-center justify-between p-2 rounded-lg {{ $p['ok'] ? 'bg-success/5 border border-success/20' : 'bg-base-200/30 opacity-60 border border-base-300' }}">
+                                <div class="min-w-0">
+                                    <div class="text-xs font-bold truncate">{{ $p['label'] }}</div>
+                                    <div class="font-mono text-[10px] text-base-content/50 truncate" dir="ltr">
+                                        {{ $p['version'] ?? 'نصب نیست' }}
+                                    </div>
+                                </div>
+                                <span class="text-lg shrink-0">{{ $p['ok'] ? '✅' : '❌' }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
+    {{-- ═══ راهنما ═══ --}}
+    <div class="card bg-base-100 shadow border border-base-300">
+        <div class="card-body p-4">
+            <h2 class="font-bold text-base mb-3">📖 راهنمای بخش‌های جدید (🆕)</h2>
+
+            <div class="space-y-3 text-sm">
+                <div class="p-3 rounded-lg bg-info/5 border-r-4 border-info">
+                    <div class="font-bold text-info mb-1">📁 مدیریت فایل‌ها — <code dir="ltr">/file-manager</code></div>
+                    <div class="text-xs text-base-content/70">آپلود، مشاهده، دانلود و حذف فایل. پشتیبانی از تصویر، PDF، فیلم، صدا و آرشیو.</div>
+                </div>
+
+                <div class="p-3 rounded-lg bg-info/5 border-r-4 border-info">
+                    <div class="font-bold text-info mb-1">👤 کاربران — <code dir="ltr">/users</code></div>
+                    <div class="text-xs text-base-content/70">افزودن، ویرایش، حذف کاربر + تخصیص چند نقش به هر کاربر.</div>
+                </div>
+
+                <div class="p-3 rounded-lg bg-info/5 border-r-4 border-info">
+                    <div class="font-bold text-info mb-1">🔐 نقش‌ها و مجوزها — <code dir="ltr">/roles</code></div>
+                    <div class="text-xs text-base-content/70">ماتریس تعاملی نقش × مجوز. با کلیک، دسترسی فعال/غیرفعال می‌شود.</div>
+                </div>
+
+                <div class="p-3 rounded-lg bg-info/5 border-r-4 border-info">
+                    <div class="font-bold text-info mb-1">📮 مرسولات — <code dir="ltr">/shipments</code></div>
+                    <div class="text-xs text-base-content/70">پیگیری مرسولات پستی و تیپاکس با کد رهگیری و وضعیت.</div>
+                </div>
+
+                <div class="p-3 rounded-lg bg-info/5 border-r-4 border-info">
+                    <div class="font-bold text-info mb-1">🌐 کانال‌های فروش — <code dir="ltr">/settings/channels</code></div>
+                    <div class="text-xs text-base-content/70">مدیریت کانال‌های فروش: اینستاگرام، تلگرام، سایت، باسلام، تلفنی، حضوری.</div>
+                </div>
+
+                <div class="p-3 rounded-lg bg-info/5 border-r-4 border-info">
+                    <div class="font-bold text-info mb-1">ℹ️ درباره — <code dir="ltr">/about</code></div>
+                    <div class="text-xs text-base-content/70">آمار کلی، نسخه PHP/Laravel و لینک‌های مفید.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

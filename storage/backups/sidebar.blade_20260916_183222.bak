@@ -1,0 +1,121 @@
+<div class="flex flex-col h-full">
+    {{-- ═══ لوگو ═══ --}}
+    <div class="px-3 pt-3 pb-2">
+        <div class="flex items-center gap-3 p-2.5 rounded-xl"
+             style="background: linear-gradient(135deg, rgba(13,148,136,0.15), rgba(8,145,178,0.08)); border: 1px solid rgba(13,148,136,0.2);">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-extrabold shadow-lg"
+                 style="background: linear-gradient(135deg, #14b8a6, #0891b2);">
+                💎
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="font-extrabold text-sm truncate">شاپگان</div>
+                <div class="text-[10px] opacity-60">ShopGun v2.1</div>
+            </div>
+            @if($notifCount > 0)
+                <div class="badge badge-error badge-sm">{{ \App\Support\PersianNumber::toFa($notifCount) }}</div>
+            @endif
+        </div>
+    </div>
+
+    {{-- ═══ تاریخ و روز ═══ --}}
+    <div class="px-3 pb-3">
+        <div class="flex items-center justify-between p-2 rounded-xl bg-black/5 dark:bg-white/5 text-xs">
+            <div class="flex items-center gap-1.5">
+                <span>📅</span>
+                <span class="font-mono font-bold">{{ $today }}</span>
+            </div>
+            <span class="opacity-60 text-[10px]">{{ $dayOfWeek }}</span>
+        </div>
+    </div>
+
+    {{-- ═══ KPI Cards — اسکرول افقی ═══ --}}
+    <div class="px-3 pb-3">
+        <div class="text-[10px] font-bold opacity-50 mb-1.5 px-1">📊 خلاصه امروز</div>
+        <div class="sg-kpi-scroll">
+            <a href="{{ route('orders.index') }}" wire:navigate class="sg-kpi-card">
+                <div class="sg-kpi-num">{{ \App\Support\PersianNumber::toFa($stats['orders_today'] ?? 0) }}</div>
+                <div class="sg-kpi-lbl">امروز</div>
+            </a>
+            <a href="{{ route('orders.index', ['status' => 'pending']) }}" wire:navigate class="sg-kpi-card">
+                <div class="sg-kpi-num text-warning">{{ \App\Support\PersianNumber::toFa($stats['orders_pending'] ?? 0) }}</div>
+                <div class="sg-kpi-lbl">در انتظار</div>
+            </a>
+            <a href="{{ route('orders.index', ['status' => 'final-check']) }}" wire:navigate class="sg-kpi-card">
+                <div class="sg-kpi-num text-info">{{ \App\Support\PersianNumber::toFa($stats['orders_check'] ?? 0) }}</div>
+                <div class="sg-kpi-lbl">چک نهایی</div>
+            </a>
+            <a href="{{ route('orders.index', ['status' => 'courier']) }}" wire:navigate class="sg-kpi-card">
+                <div class="sg-kpi-num text-success">{{ \App\Support\PersianNumber::toFa($stats['orders_courier'] ?? 0) }}</div>
+                <div class="sg-kpi-lbl">مامور</div>
+            </a>
+            <a href="{{ route('customers.index') }}" wire:navigate class="sg-kpi-card">
+                <div class="sg-kpi-num">{{ \App\Support\PersianNumber::toFa($stats['customers'] ?? 0) }}</div>
+                <div class="sg-kpi-lbl">مشتری</div>
+            </a>
+            <a href="{{ route('certificates.index') }}" wire:navigate class="sg-kpi-card">
+                <div class="sg-kpi-num">{{ \App\Support\PersianNumber::toFa($stats['certificates'] ?? 0) }}</div>
+                <div class="sg-kpi-lbl">شناسنامه</div>
+            </a>
+        </div>
+    </div>
+
+    {{-- ═══ منوی اصلی ═══ --}}
+    <nav class="flex-1 overflow-y-auto px-3 pb-3">
+        <div class="text-[10px] font-bold opacity-50 mb-1.5 px-1">📁 منو</div>
+        <ul class="space-y-0.5">
+            @php
+                $menu = [
+                    ['route' => 'dashboard',          'icon' => '🏠', 'label' => 'داشبورد'],
+                    ['route' => 'orders.index',       'icon' => '📦', 'label' => 'سفارشات',   'badge' => $stats['orders_pending'] ?? 0],
+                    ['route' => 'customers.index',    'icon' => '👥', 'label' => 'مشتریان'],
+                    ['route' => 'certificates.index', 'icon' => '💎', 'label' => 'شناسنامه‌ها'],
+                    ['route' => 'reports.index',      'icon' => '📊', 'label' => 'گزارش‌ها'],
+                    ['route' => 'activity-log',       'icon' => '📜', 'label' => 'لاگ'],
+                    ['route' => 'settings.index',     'icon' => '⚙️', 'label' => 'تنظیمات'],
+                ];
+            @endphp
+
+            @foreach($menu as $m)
+                @php
+                    $isActive = request()->routeIs($m['route']) || request()->routeIs(explode('.', $m['route'])[0] . '.*');
+                @endphp
+                <li>
+                    <a href="{{ route($m['route']) }}" wire:navigate
+                       class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all
+                              {{ $isActive
+                                  ? 'bg-primary/15 text-primary font-bold shadow-sm'
+                                  : 'opacity-75 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5' }}">
+                        <span class="text-base">{{ $m['icon'] }}</span>
+                        <span class="flex-1">{{ $m['label'] }}</span>
+                        @if(!empty($m['badge']) && $m['badge'] > 0)
+                            <span class="badge badge-warning badge-xs">{{ \App\Support\PersianNumber::toFa($m['badge']) }}</span>
+                        @endif
+                    </a>
+                </li>
+            @endforeach
+        </ul>
+    </nav>
+
+    {{-- ═══ اعلان‌ها ═══ --}}
+    @if($notifCount > 0)
+        <div class="px-3 pb-3">
+            <div class="rounded-xl p-2.5"
+                 style="background: linear-gradient(135deg, rgba(251,146,60,0.12), rgba(248,113,113,0.08)); border: 1px solid rgba(251,146,60,0.25);">
+                <div class="flex items-center gap-2 text-xs font-bold text-warning mb-1">
+                    🔔 {{ \App\Support\PersianNumber::toFa($notifCount) }} اعلان
+                </div>
+                @if(($stats['orders_pending'] ?? 0) > 0)
+                    <div class="text-[10px] opacity-70">• {{ \App\Support\PersianNumber::toFa($stats['orders_pending']) }} سفارش در انتظار</div>
+                @endif
+                @if(($stats['api_errors'] ?? 0) > 0)
+                    <div class="text-[10px] opacity-70">• {{ \App\Support\PersianNumber::toFa($stats['api_errors']) }} خطای API امروز</div>
+                @endif
+            </div>
+        </div>
+    @endif
+
+    {{-- ═══ فوتر ═══ --}}
+    <div class="px-3 py-2 border-t border-black/5 dark:border-white/5 text-[9.5px] text-center opacity-50">
+        گروه هنری اقاقیا · ۱۴۰۵
+    </div>
+</div>

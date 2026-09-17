@@ -1,0 +1,522 @@
+<?php
+namespace App\Livewire\Settings;
+
+use App\Models\ApiLog;
+use App\Models\AppSetting;
+use App\Models\Channel;
+use App\Models\Metal;
+use App\Models\Stone;
+use App\Services\ApiLogger;
+use Livewire\Attributes\On;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+
+class Index extends Component
+{
+    use WithFileUploads;
+
+    public string $tab = 'general';
+
+    /* ═══ General ═══ */
+    public string $shop_name = 'جواهری مشاهیر';
+    public string $shop_phone = '09151531301';
+    public string $shop_address = '';
+    public string $shop_postal = '';
+    public string $shop_email = '';
+    public string $currency = 'تومان';
+
+    /* ═══ Appearance ═══ */
+    public string $theme = 'light';
+    public string $primary_color = '#1a5276';
+    public string $accent_color = '#c9a84c';
+    public string $density = 'normal';
+    public string $font_family = 'Vazirmatn';
+
+    /* ═══ Commerce ═══ */
+    public string $commerce_url = '';
+    public string $commerce_key = '';
+    public string $commerce_secret = '';
+    public array $wc_status_filter = [];
+    public bool $commerce_update_existing = true;
+    public array $commerce_test_result = [];
+    public array $commerce_sync_result = [];
+    public bool $testing = false;
+    public bool $syncing = false;
+
+    /* ═══ Certificate ═══ */
+    public float $cert_width = 6.5;
+    public float $cert_height = 6.5;
+    public int $cert_img_w = 120;
+    public int $cert_img_h = 120;
+    public int $cert_qr_size = 40;
+    public int $cert_logo_w = 28;
+    public int $cert_logo_h = 22;
+    public int $cert_code_font = 11;
+    public int $cert_title_font = 20;
+    public int $cert_desc_font = 7;
+    public bool $cert_hide_desc = false;
+
+    /* ═══ Label ═══ */
+    public int $label_width = 100;
+    public int $label_height = 50;
+    public array $label_fonts = [
+        'customer' => 16, 'insurance' => 12, 'address' => 14,
+        'contactLbl' => 11, 'contactVal' => 16, 'meta' => 11, 'footer' => 10,
+    ];
+
+    /* ═══ Assets ═══ */
+    public string $bg_image = '';
+    public array $logo_images = [];
+    public string $desc_image = '';
+    public string $header_logo = '';
+
+    /* ═══ Logs ═══ */
+    public string $log_filter = '';
+    public string $log_search = '';
+    public array $logs = [];
+
+    /* ═══ Stones/Metals ═══ */
+    public array $stones_list = [];
+    public array $metals_list = [];
+    public string $new_stone_name = '';
+    public string $new_stone_en = '';
+    public string $new_stone_origin = '';
+    public string $new_stone_icon = '💎';
+    public string $new_stone_flag = 'ir';
+    public string $new_metal_name = '';
+    public string $new_metal_en = '';
+    public string $new_metal_carat = '';
+
+    /* ═══ Monitor ═══ */
+    public string $monitor_filter = '';
+    public array $monitor_stats = [];
+    public array $monitor_logs = [];
+
+    public function mount(): void
+    {
+        $this->loadSettings();
+    }
+
+    public function loadSettings(): void
+    {
+        // General
+        $this->shop_name = (string) AppSetting::get('shop_name', 'جواهری مشاهیر');
+        $this->shop_phone = (string) AppSetting::get('shop_phone', '09151531301');
+        $this->shop_address = (string) AppSetting::get('shop_address', '');
+        $this->shop_postal = (string) AppSetting::get('shop_postal', '');
+        $this->shop_email = (string) AppSetting::get('shop_email', '');
+        $this->currency = (string) AppSetting::get('currency', 'تومان');
+
+        // Appearance
+        $this->theme = (string) AppSetting::get('theme', 'light');
+        $this->primary_color = (string) AppSetting::get('primary_color', '#1a5276');
+        $this->accent_color = (string) AppSetting::get('accent_color', '#c9a84c');
+        $this->density = (string) AppSetting::get('density', 'normal');
+        $this->font_family = (string) AppSetting::get('font_family', 'Vazirmatn');
+
+        // Commerce
+        $this->commerce_url = (string) AppSetting::get('commerce_url', '');
+        $this->commerce_key = (string) AppSetting::get('commerce_key', '');
+        $this->commerce_secret = (string) AppSetting::get('commerce_secret', '');
+        $this->wc_status_filter = (array) AppSetting::get('wc_status_filter', ['processing','completed','on-hold']);
+        $this->commerce_update_existing = (bool) AppSetting::get('commerce_update_existing', true);
+
+        // Certificate
+        $this->cert_width = (float) AppSetting::get('cert_width', 6.5);
+        $this->cert_height = (float) AppSetting::get('cert_height', 6.5);
+        $this->cert_img_w = (int) AppSetting::get('cert_img_w', 120);
+        $this->cert_img_h = (int) AppSetting::get('cert_img_h', 120);
+        $this->cert_qr_size = (int) AppSetting::get('cert_qr_size', 40);
+        $this->cert_logo_w = (int) AppSetting::get('cert_logo_w', 28);
+        $this->cert_logo_h = (int) AppSetting::get('cert_logo_h', 22);
+        $this->cert_code_font = (int) AppSetting::get('cert_code_font', 11);
+        $this->cert_title_font = (int) AppSetting::get('cert_title_font', 20);
+        $this->cert_desc_font = (int) AppSetting::get('cert_desc_font', 7);
+        $this->cert_hide_desc = (bool) AppSetting::get('cert_hide_desc', false);
+
+        // Label
+        $this->label_width = (int) AppSetting::get('label_width', 100);
+        $this->label_height = (int) AppSetting::get('label_height', 50);
+        $lf = AppSetting::get('label_fonts', null);
+        if (is_array($lf)) $this->label_fonts = array_merge($this->label_fonts, $lf);
+
+        // Assets
+        $this->bg_image = (string) AppSetting::get('bg_image', '');
+        $this->logo_images = (array) AppSetting::get('logo_images', []);
+        $this->desc_image = (string) AppSetting::get('desc_image', '');
+        $this->header_logo = (string) AppSetting::get('header_logo', '');
+
+        // Stones/Metals
+        $this->loadStonesMetals();
+
+        if ($this->tab === 'monitor') $this->refreshMonitor();
+        if ($this->tab === 'logs') $this->loadLogs();
+    }
+
+    public function setTab(string $tab): void
+    {
+        $this->tab = $tab;
+        if ($tab === 'monitor') $this->refreshMonitor();
+        if ($tab === 'logs') $this->loadLogs();
+        if ($tab === 'stones') $this->loadStonesMetals();
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       ذخیره تب‌ها
+       ═══════════════════════════════════════════════════════════ */
+
+    public function saveGeneral(): void
+    {
+        AppSetting::putMany([
+            'shop_name' => $this->shop_name,
+            'shop_phone' => $this->shop_phone,
+            'shop_address' => $this->shop_address,
+            'shop_postal' => $this->shop_postal,
+            'shop_email' => $this->shop_email,
+            'currency' => $this->currency,
+        ], 'general');
+        $this->dispatch('notify', type: 'success', message: 'تنظیمات عمومی ذخیره شد ✅');
+    }
+
+    public function saveAppearance(): void
+    {
+        AppSetting::putMany([
+            'theme' => $this->theme,
+            'primary_color' => $this->primary_color,
+            'accent_color' => $this->accent_color,
+            'density' => $this->density,
+            'font_family' => $this->font_family,
+        ], 'appearance');
+        $this->dispatch('notify', type: 'success', message: 'ظاهر ذخیره شد ✅');
+        $this->dispatch('apply-theme', [
+            'theme' => $this->theme,
+            'density' => $this->density,
+            'primary_color' => $this->primary_color,
+        ]);
+    }
+
+    public function saveCommerce(): void
+    {
+        AppSetting::putMany([
+            'commerce_url' => $this->commerce_url,
+            'commerce_key' => $this->commerce_key,
+            'commerce_secret' => $this->commerce_secret,
+            'wc_status_filter' => $this->wc_status_filter,
+            'commerce_update_existing' => $this->commerce_update_existing,
+        ], 'commerce');
+        $this->dispatch('notify', type: 'success', message: 'تنظیمات کامرس ذخیره شد ✅');
+    }
+
+    public function testCommerce(): void
+    {
+        $this->testing = true;
+        $this->commerce_test_result = [];
+
+        $url = trim($this->commerce_url);
+        $key = trim($this->commerce_key);
+        $secret = trim($this->commerce_secret);
+
+        if (!$url || !$key || !$secret) {
+            $this->commerce_test_result = ['ok' => false, 'message' => 'هر سه فیلد الزامی است'];
+            $this->testing = false;
+            return;
+        }
+
+        $base = rtrim($url, '/');
+        if (!str_contains($base, '/wp-json')) {
+            $base .= '/wp-json/wc/v3';
+        }
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::withBasicAuth($key, $secret)
+                ->timeout(30)
+                ->get($base . '/system_status');
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $this->commerce_test_result = [
+                    'ok' => true,
+                    'message' => 'اتصال موفق ✅',
+                    'wp_version' => $data['environment']['wp_version'] ?? '?',
+                    'currency' => $data['settings']['currency'] ?? '?',
+                ];
+                ApiLogger::log('woocommerce', 'تست اتصال موفق');
+            } else {
+                $this->commerce_test_result = [
+                    'ok' => false,
+                    'message' => 'HTTP ' . $response->status(),
+                ];
+            }
+        } catch (\Throwable $e) {
+            $this->commerce_test_result = ['ok' => false, 'message' => $e->getMessage()];
+            ApiLogger::log('woocommerce', 'تست اتصال ناموفق', $e->getMessage());
+        }
+
+        $this->testing = false;
+        $this->saveCommerce();
+    }
+
+    public function syncProducts(): void
+    {
+        $this->syncing = true;
+        $this->commerce_sync_result = ['running' => true, 'message' => 'در حال سینک...'];
+
+        try {
+            $service = app(\App\Services\ProductSyncService::class);
+            $report = $service::syncFromWoo(true);
+            $this->commerce_sync_result = array_merge($report, ['success' => true]);
+            $this->dispatch('notify', type: 'success', message: "سینک: {$report['total']} محصول");
+        } catch (\Throwable $e) {
+            $this->commerce_sync_result = ['success' => false, 'message' => $e->getMessage()];
+            $this->dispatch('notify', type: 'error', message: 'خطا: ' . $e->getMessage());
+        }
+
+        $this->syncing = false;
+    }
+
+    public function saveCertificate(): void
+    {
+        AppSetting::putMany([
+            'cert_width' => $this->cert_width,
+            'cert_height' => $this->cert_height,
+            'cert_img_w' => $this->cert_img_w,
+            'cert_img_h' => $this->cert_img_h,
+            'cert_qr_size' => $this->cert_qr_size,
+            'cert_logo_w' => $this->cert_logo_w,
+            'cert_logo_h' => $this->cert_logo_h,
+            'cert_code_font' => $this->cert_code_font,
+            'cert_title_font' => $this->cert_title_font,
+            'cert_desc_font' => $this->cert_desc_font,
+            'cert_hide_desc' => $this->cert_hide_desc,
+        ], 'certificate');
+        $this->dispatch('notify', type: 'success', message: 'تنظیمات شناسنامه ذخیره شد ✅');
+    }
+
+    public function saveLabel(): void
+    {
+        AppSetting::putMany([
+            'label_width' => $this->label_width,
+            'label_height' => $this->label_height,
+            'label_fonts' => $this->label_fonts,
+        ], 'label');
+        $this->dispatch('notify', type: 'success', message: 'تنظیمات برچسب ذخیره شد ✅');
+    }
+
+    public function setCertPreset(float $w, float $h): void
+    {
+        $this->cert_width = $w;
+        $this->cert_height = $h;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       Assets
+       ═══════════════════════════════════════════════════════════ */
+
+    public function uploadBg(): void
+    {
+        $this->validate(['bg_image' => 'image|max:5120']);
+        $path = $this->bg_image->store('settings', 'public');
+        $this->bg_image = asset('storage/' . $path);
+        AppSetting::put('bg_image', $this->bg_image, 'assets');
+        $this->dispatch('notify', type: 'success', message: 'پس‌زمینه ذخیره شد');
+    }
+
+    public function removeBg(): void
+    {
+        $this->bg_image = '';
+        AppSetting::put('bg_image', '', 'assets');
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       Stones / Metals
+       ═══════════════════════════════════════════════════════════ */
+
+    public function loadStonesMetals(): void
+    {
+        $this->stones_list = Stone::orderBy('id')->get()->toArray();
+        $this->metals_list = Metal::orderBy('id')->get()->toArray();
+    }
+
+    public function addStone(): void
+    {
+        $this->validate([
+            'new_stone_name' => 'required|string|max:100',
+            'new_stone_en' => 'required|string|max:100',
+        ]);
+
+        Stone::create([
+            'name' => $this->new_stone_name,
+            'name_en' => $this->new_stone_en,
+            'origin' => $this->new_stone_origin,
+            'flag' => $this->new_stone_flag,
+            'icon' => $this->new_stone_icon,
+        ]);
+
+        $this->reset(['new_stone_name', 'new_stone_en', 'new_stone_origin']);
+        $this->loadStonesMetals();
+        $this->dispatch('notify', type: 'success', message: 'سنگ اضافه شد ✅');
+    }
+
+    public function removeStone(int $id): void
+    {
+        Stone::find($id)?->delete();
+        $this->loadStonesMetals();
+        $this->dispatch('notify', type: 'success', message: 'حذف شد');
+    }
+
+    public function addMetal(): void
+    {
+        $this->validate([
+            'new_metal_name' => 'required|string|max:100',
+            'new_metal_carat' => 'required|string|max:20',
+        ]);
+
+        Metal::create([
+            'name' => $this->new_metal_name,
+            'name_en' => $this->new_metal_en ?: $this->new_metal_name,
+            'carat' => $this->new_metal_carat,
+        ]);
+
+        $this->reset(['new_metal_name', 'new_metal_en', 'new_metal_carat']);
+        $this->loadStonesMetals();
+        $this->dispatch('notify', type: 'success', message: 'فلز اضافه شد ✅');
+    }
+
+    public function removeMetal(int $id): void
+    {
+        Metal::find($id)?->delete();
+        $this->loadStonesMetals();
+        $this->dispatch('notify', type: 'success', message: 'حذف شد');
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       Logs
+       ═══════════════════════════════════════════════════════════ */
+
+    public function loadLogs(): void
+    {
+        $query = \Spatie\Activitylog\Models\Activity::query()
+            ->latest();
+
+        if ($this->log_search) {
+            $query->where('description', 'like', "%{$this->log_search}%");
+        }
+
+        $this->logs = $query->limit(100)->get()->map(fn($l) => [
+            'id' => $l->id,
+            'description' => $l->description,
+            'event' => $l->event,
+            'subject_type' => class_basename($l->subject_type ?? ''),
+            'subject_id' => $l->subject_id,
+            'causer' => $l->causer?->name ?? 'سیستم',
+            'created_at' => $l->created_at?->format('Y-m-d H:i:s'),
+        ])->toArray();
+    }
+
+    public function clearLogs(): void
+    {
+        \Spatie\Activitylog\Models\Activity::truncate();
+        $this->loadLogs();
+        $this->dispatch('notify', type: 'success', message: 'لاگ‌ها پاک شد');
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       Monitor API
+       ═══════════════════════════════════════════════════════════ */
+
+    public function refreshMonitor(): void
+    {
+        if (!class_exists(ApiLog::class)) return;
+
+        try {
+            $query = ApiLog::query();
+            if ($this->monitor_filter) {
+                $query->where('url', 'like', "%{$this->monitor_filter}%");
+            }
+
+            $this->monitor_stats = [
+                'total' => ApiLog::count(),
+                'today' => ApiLog::whereDate('created_at', today())->count(),
+                'errors' => ApiLog::whereNotNull('error')->count(),
+            ];
+
+            $this->monitor_logs = $query->latest('id')->limit(50)->get()->map(fn($l) => [
+                'id' => $l->id,
+                'service' => $l->service,
+                'method' => $l->method,
+                'url' => substr($l->url ?? '', 0, 100),
+                'status_code' => $l->status_code,
+                'duration_ms' => $l->duration_ms,
+                'error' => $l->error,
+                'created_at' => $l->created_at?->format('H:i:s'),
+            ])->toArray();
+        } catch (\Throwable $e) {
+            $this->monitor_stats = [];
+            $this->monitor_logs = [];
+        }
+    }
+
+    public function clearMonitor(): void
+    {
+        ApiLog::truncate();
+        $this->refreshMonitor();
+        $this->dispatch('notify', type: 'success', message: 'لاگ API پاک شد');
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       Backup
+       ═══════════════════════════════════════════════════════════ */
+
+    public function createBackup(): void
+    {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('backup:run');
+            $this->dispatch('notify', type: 'success', message: 'پشتیبان ساخته شد ✅');
+        } catch (\Throwable $e) {
+            $this->dispatch('notify', type: 'error', message: 'خطا: ' . $e->getMessage());
+        }
+    }
+
+    public function downloadBackup(): void
+    {
+        $this->dispatch('notify', type: 'info', message: 'در حال آماده‌سازی...');
+    }
+
+    public function exportJson(): void
+    {
+        $data = [
+            'stones' => Stone::all()->toArray(),
+            'metals' => Metal::all()->toArray(),
+            'orders' => \App\Models\Order::with('items')->get()->toArray(),
+            'customers' => \App\Models\Customer::all()->toArray(),
+            'certificates' => \App\Models\Certificate::all()->toArray(),
+            'settings' => AppSetting::all()->toArray(),
+        ];
+
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        $path = storage_path('app/backup-' . date('Ymd-His') . '.json');
+        file_put_contents($path, $json);
+
+        $this->dispatch('notify', type: 'success', message: 'خروجی: ' . basename($path));
+    }
+
+    public function render()
+    {
+        return view('livewire.settings.index', [
+            'stats' => $this->getSystemStats(),
+        ])->layout('components.layouts.app');
+    }
+
+    protected function getSystemStats(): array
+    {
+        return [
+            'php' => PHP_VERSION,
+            'laravel' => app()->version(),
+            'orders' => \App\Models\Order::count(),
+            'customers' => \App\Models\Customer::count(),
+            'products' => \App\Models\Product::count(),
+            'certificates' => \App\Models\Certificate::count(),
+            'storage' => '—',
+        ];
+    }
+}

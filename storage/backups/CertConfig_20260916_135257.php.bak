@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Support;
+
+class CertConfig
+{
+    /** سایز پیش‌فرض کارت شناسنامه (cm) */
+    public const DEFAULT_WIDTH  = 6.5;
+    public const DEFAULT_HEIGHT = 6.5;
+
+    /** ابعاد پیش‌فرض عناصر (px در مقیاس 6.5cm) */
+    public const DEFAULT_IMG_W   = 120;
+    public const DEFAULT_IMG_H   = 120;
+    public const DEFAULT_QR_SIZE = 40;
+    public const DEFAULT_LOGO_W  = 28;
+    public const DEFAULT_LOGO_H  = 22;
+
+    /** فونت‌ها (px) */
+    public const DEFAULT_CODE_FONT  = 11;
+    public const DEFAULT_TITLE_FONT = 20;
+    public const DEFAULT_DESC_FONT  = 7;
+    public const DEFAULT_TABLE_LABEL_FONT = 8;
+    public const DEFAULT_TABLE_VALUE_FONT = 8;
+
+    /**
+     * تبدیل سانتی‌متر → پیکسل (96 DPI)
+     */
+    public static function cmToPx(float $cm): int
+    {
+        return (int) round($cm * 96 / 2.54);
+    }
+
+    /**
+     * تبدیل پیکسل → سانتی‌متر
+     */
+    public static function pxToCm(int $px): float
+    {
+        return round($px * 2.54 / 96, 2);
+    }
+
+    /**
+     * محاسبه scale بر اساس سایز فعلی به 6.5
+     */
+    public static function scaleFrom(float $certW): float
+    {
+        return $certW / self::DEFAULT_WIDTH;
+    }
+
+    /**
+     * تنظیمات پیش‌فرض شناسنامه
+     */
+    public static function defaults(): array
+    {
+        return [
+            'width'  => self::DEFAULT_WIDTH,
+            'height' => self::DEFAULT_HEIGHT,
+            'sizes'  => [
+                'imgW'           => self::DEFAULT_IMG_W,
+                'imgH'           => self::DEFAULT_IMG_H,
+                'qrSize'         => self::DEFAULT_QR_SIZE,
+                'logoW'          => self::DEFAULT_LOGO_W,
+                'logoH'          => self::DEFAULT_LOGO_H,
+                'codeFont'       => self::DEFAULT_CODE_FONT,
+                'titleFont'      => self::DEFAULT_TITLE_FONT,
+                'descFont'       => self::DEFAULT_DESC_FONT,
+                'tableLabelFont' => self::DEFAULT_TABLE_LABEL_FONT,
+                'tableValueFont' => self::DEFAULT_TABLE_VALUE_FONT,
+            ],
+        ];
+    }
+
+    /**
+     * لیبل پیش‌فرض
+     */
+    public static function labelDefaults(): array
+    {
+        return [
+            'width'  => 100, // mm
+            'height' => 50,  // mm
+            'fonts'  => [
+                'customer'   => 16,
+                'insurance'  => 12,
+                'address'    => 14,
+                'contactLbl' => 11,
+                'contactVal' => 16,
+                'meta'       => 11,
+                'footer'     => 10,
+            ],
+        ];
+    }
+}

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="{{ \App\Models\AppSetting::get('theme', 'light') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+    <meta name="theme-color" content="#1a5276">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>جواهری مشاهیر</title>
+
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:wght@400;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        (function(){
+            var t = localStorage.getItem('theme') || '{{ \App\Models\AppSetting::get("theme", "light") }}';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @livewireStyles
+
+    <link rel="stylesheet" href="{{ asset('css/legacy.css') }}?v=1">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    @stack('styles')
+    <link rel="stylesheet" href="{{ asset('css/reports.css') }}?v=1">
+<link rel="stylesheet" href="{{ asset('css/settings-tabs-fix.css') }}">
+    @php
+        try {
+            $_p = \App\Models\AppSetting::get('primary_color', '#1a5276');
+            $_g = \App\Models\AppSetting::get('accent_color', '#c9a84c');
+            $_f = \App\Models\AppSetting::get('font_family', 'Vazirmatn');
+        } catch (\Throwable $e) {
+            $_p = '#1a5276'; $_g = '#c9a84c'; $_f = 'Vazirmatn';
+        }
+    @endphp
+    <style>
+        :root {
+            --primary: {{ $_p }} !important;
+            --gold: {{ $_g }} !important;
+            --primary-dynamic: {{ $_p }};
+            --gold-dynamic: {{ $_g }};
+            --font-dynamic: {{ $_f }};
+        }
+        body { font-family: var(--font-dynamic), 'Vazirmatn', Tahoma, sans-serif !important; }
+    </style>
+    <link rel="stylesheet" href="{{ asset('css/extra.css?v=4">
+
+    {{-- PowerGrid Assets --}}
+    @powerGridStyles
+
+</head>
+<body>
+
+@auth
+    <livewire:global-search />
+    <livewire:components.shipment-timeline />
+    <livewire:orders.import-postal :key="'imp'" />
+    <livewire:orders.form-modal :key="'ofm'" />
+    <livewire:orders.view-modal :key="'ovm'" />
+    <livewire:customers.profile-modal :key="'cpm'" />
+    <livewire:certificates.view-modal :key="'cvm'" />
+@endauth
+
+{{-- ═══ Header ═══ --}}
+<header class="sg-main-header">
+    <div class="sg-header-right">
+        <div class="sg-logo-container" id="headerLogo" onclick="document.getElementById('headerLogoInput').click()">
+            @if(\App\Models\AppSetting::get('header_logo'))
+                <img src="{{ \App\Models\AppSetting::get('header_logo') }}">
+            @else
+                💎
+            @endif
+        </div>
+        <input type="file" id="headerLogoInput" accept="image/*" style="display:none" onchange="sgHandleHeaderLogo(event)">
+        <div class="sg-header-title">
+            <h1>{{ \App\Models\AppSetting::get('shop_name', 'جواهری مشاهیر') }}</h1>
+            <p>مدیریت سفارشات و شناسنامه</p>
+        </div>
+    </div>
+
+    <div class="sg-header-date" id="headerDate">📅 در حال بارگذاری...</div>
+
+    <div class="sg-header-actions">
+        <button class="sg-header-icon-btn" onclick="sgToggleTheme()" id="themeIconBtn">🌙</button>
+        <a href="{{ route('activity-log') }}" wire:navigate class="sg-header-icon-btn" title="لاگ">📜</a>
+        <a href="{{ route('settings.index') }}" wire:navigate class="sg-header-icon-btn" title="تنظیمات">⚙️</a>
+        <a href="{{ route('settings.health') }}" wire:navigate class="sg-header-icon-btn" title="سلامت سیستم">🩺</a>
+    </div>
+</header>
+
+{{-- ═══ Tabs (Desktop) ═══ --}}
+<div class="sg-tabs-bar">
+    @php
+        $tabs = [
+            ['route' => 'orders.index',       'icon' => '📦', 'label' => 'سفارشات'],
+            ['route' => 'customers.index',    'icon' => '👥', 'label' => 'مشتریان'],
+            ['route' => 'certificates.index', 'icon' => '💎', 'label' => 'شناسنامه‌ها'],
+            ['route' => 'reports.index',      'icon' => '📊', 'label' => 'گزارش‌ها'],
+            ['route' => 'settings.index',     'icon' => '⚙️', 'label' => 'تنظیمات'],
+        ];
+    @endphp
+    @foreach($tabs as $tab)
+        @php $isActive = request()->routeIs($tab['route']) || request()->routeIs(explode('.', $tab['route'])[0].'.*'); @endphp
+        <a href="{{ route($tab['route']) }}" wire:navigate class="sg-tab-btn {{ $isActive ? 'active' : '' }}">
+            <span>{{ $tab['icon'] }}</span>
+            <span>{{ $tab['label'] }}</span>
+        </a>
+    @endforeach
+</div>
+
+{{-- ═══ Main Content ═══ --}}
+<main>
+    {{ $slot }}
+</main>
+
+{{-- ═══ Mobile Bar ═══ --}}
+<nav class="sg-mobile-bar">
+    <div class="sg-mobile-bar-inner">
+        @php
+            $items = [
+                ['dashboard','🏠','خانه'],
+                ['orders.index','📦','سفارش'],
+                ['orders.create','➕','جدید'],
+                ['customers.index','👥','مشتری'],
+                ['certificates.index','💎','کارت'],
+                ['certificates.create','✨','کارت جدید'],
+                ['reports.index','📊','گزارش'],
+                ['settings.index','⚙️','تنظیم'],
+                ['activity-log','📜','لاگ'],
+            ];
+        @endphp
+        @foreach($items as $it)
+            @php
+                $isActive = request()->routeIs($it[0]) || request()->routeIs(explode('.', $it[0])[0] . '.*');
+                $cls = 'sg-mobile-bar-btn';
+                if ($it[0] === 'orders.create') $cls .= ' add';
+                elseif ($isActive) $cls .= ' active';
+            @endphp
+            <a href="{{ route($it[0]) }}" wire:navigate class="{{ $cls }}">
+                <span class="ico">{{ $it[1] }}</span>
+                <span>{{ $it[2] }}</span>
+            </a>
+        @endforeach
+    </div>
+</nav>
+
+{{-- ═══ Toast Container ═══ --}}
+<div class="sg-toast-container" id="toastContainer"></div>
+
+<script>
+    // ═══ Theme Toggle ═══
+    function sgToggleTheme() {
+        var html = document.documentElement;
+        var cur = html.getAttribute('data-theme') || 'light';
+        var next = cur === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        document.getElementById('themeIconBtn').textContent = next === 'dark' ? '☀️' : '🌙';
+
+        // ذخیره در سرور
+        fetch('{{ route("settings.update-theme") }}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}'},
+            body: JSON.stringify({theme: next})
+        }).catch(function(){});
+    }
+
+    // ═══ Toast ═══
+    window.sgToast = function(msg, type) {
+        type = type || 'info';
+        var c = document.getElementById('toastContainer');
+        if (!c) return;
+        var icons = {success: '✅', error: '❌', info: 'ℹ️', warn: '⚠️'};
+        var t = document.createElement('div');
+        t.className = 'sg-toast ' + type;
+        t.innerHTML = (icons[type] || 'ℹ️') + ' ' + msg;
+        c.appendChild(t);
+        setTimeout(function() { if (t.parentNode) t.remove(); }, 3200);
+    };
+
+    // ═══ Header Logo Upload ═══
+    function sgHandleHeaderLogo(e) {
+        var f = e.target.files[0]; if (!f) return;
+        if (f.size > 2 * 1024 * 1024) { sgToast('حجم زیاد (max 2MB)', 'error'); return; }
+        var r = new FileReader();
+        r.onload = function(ev) {
+            var data = ev.target.result;
+            document.getElementById('headerLogo').innerHTML = '<img src="' + data + '">';
+            // ذخیره به سرور
+            fetch('{{ route("settings.update-header-logo") }}', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}'},
+                body: JSON.stringify({logo: data})
+            }).then(function() { sgToast('لوگو ذخیره شد ✅', 'success'); });
+        };
+        r.readAsDataURL(f);
+    }
+
+    // ═══ Header Date ═══
+    function sgUpdateHeaderDate() {
+        var el = document.getElementById('headerDate');
+        if (!el) return;
+        var d = new Date();
+        var p = toPersianDate(d);
+        var months = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+        el.innerHTML = '📅 ' + p.day + ' ' + months[p.month-1] + ' ' + p.year + ' · ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+    }
+    function toPersianDate(d) {
+        var gy=d.getFullYear(),gm=d.getMonth()+1,gd=d.getDate();
+        var g_d_m=[0,31,59,90,120,151,181,212,243,273,304,334];
+        var jy=(gy<=1600)?0:979;gy-=(gy<=1600)?621:1600;
+        var gy2=(gm>2)?(gy+1):gy;
+        var days=365*gy+Math.floor((gy2+3)/4)-Math.floor((gy2+99)/100)+Math.floor((gy2+399)/400)-80+gd+g_d_m[gm-1];
+        jy+=33*Math.floor(days/12053);days%=12053;jy+=4*Math.floor(days/1461);days%=1461;
+        if(days>365){jy+=Math.floor((days-1)/365);days=(days-1)%365}
+        var jm=(days<186)?1+Math.floor(days/31):7+Math.floor((days-186)/30);
+        var jd=1+((days<186)?(days%31):((days-186)%30));
+        return {year:jy,month:jm,day:jd};
+    }
+    sgUpdateHeaderDate();
+    setInterval(sgUpdateHeaderDate, 60000);
+
+    // ═══ Init ═══
+    document.addEventListener('DOMContentLoaded', function() {
+        var cur = document.documentElement.getAttribute('data-theme');
+        var icon = document.getElementById('themeIconBtn');
+        if (icon) icon.textContent = cur === 'dark' ? '☀️' : '🌙';
+    });
+
+    // ═══ Livewire Notify Event ═══
+    document.addEventListener('livewire:init', function() {
+    Livewire.on('apply-appearance', function(data) {
+        var p = Array.isArray(data) ? data[0] : data;
+        var root = document.documentElement;
+        if (p.primary_color) {
+            root.style.setProperty('--primary', p.primary_color);
+            document.querySelectorAll('style').forEach(function(s) {
+                if (s.textContent.includes('--primary:')) {
+                    // no-op
+                }
+            });
+        }
+        if (p.accent_color) root.style.setProperty('--gold', p.accent_color);
+        if (p.font_family) {
+            root.style.setProperty('--font-dynamic', p.font_family);
+            document.body.style.fontFamily = p.font_family + ", 'Vazirmatn', Tahoma, sans-serif";
+        }
+        if (p.theme) {
+            root.setAttribute('data-theme', p.theme);
+            localStorage.setItem('theme', p.theme);
+        }
+        if (window.sgToast) sgToast('ظاهر اعمال شد ✅', 'success');
+    });
+
+        Livewire.on('notify', function(data) {
+            var p = Array.isArray(data) ? data[0] : data;
+            sgToast(p.message || '', p.type || 'info');
+        });
+    });
+</script>
+
+
+    {{-- Jalali Datepicker --}}
+    @stack('jalali-scripts')
+@routes
+    
+    {{-- Jalali Datepicker --}}
+    @stack('jalali-scripts')
+@livewireScripts
+@stack('scripts')
+
+    {{-- PowerGrid Scripts --}}
+    @powerGridScripts
+
+</body>
+</html>

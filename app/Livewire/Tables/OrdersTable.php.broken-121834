@@ -1,0 +1,174 @@
+<?php
+
+namespace App\Livewire\Tables;
+
+use App\Models\Order;
+use Illuminate\Database\Eloquent\Builder;
+use PowerComponents\LivewirePowerGrid\Column;
+use PowerComponents\LivewirePowerGrid\Facades\Filter;
+use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
+use PowerComponents\LivewirePowerGrid\PowerGridComponent;
+use PowerComponents\LivewirePowerGrid\PowerGridFields;
+
+final class OrdersTable extends PowerGridComponent
+{
+    public string $tableName = 'orders-table';
+    public string $sortField = 'id';
+    public string $sortDirection = 'desc';
+
+    public function setUp(): array
+    {
+        return [
+            PowerGrid::header()
+                ->showSearchInput()
+                ->showToggleColumns(),
+
+            PowerGrid::footer()
+                ->showPerPage(perPage: 20, perPageValues: [10, 20, 50, 100])
+                ->showRecordCount(),
+
+            PowerGrid::detail()
+                ->view('livewire.tables.orders-detail')
+                ->showCollapseIcon(),
+        ];
+    }
+
+    public function datasource(): Builder
+    {
+        return Order::query()
+            ->with(['items', 'channel', 'customer']);
+    }
+
+    public function relationSearch(): array
+    {
+        return [
+            'customer' => ['name', 'phone'],
+        ];
+    }
+
+    public function fields(): PowerGridFields
+    {
+        return PowerGrid::fields()
+            ->add('id')
+            ->add('order_number')
+            ->add('customer_display', fn($row) => $row->customer_name ?? $row->customer?->name ?? '—')
+            ->add('phone')
+            ->add('items_summary', function ($row) {
+                if (!$row->items->count()) return '—';
+                $names = $row->items->pluck('title')->take(2)->implode('، ');
+                $extra = $row->items->count() > 2 ? ' +' . ($row->items->count() - 2) : '';
+                return $names . $extra;
+            })
+            ->add('insurance_fmt', fn($row) => \App\Support\PersianNumber::toFa(number_format((float) $row->insurance)))
+            ->add('status_label', function ($row) {
+                $map = [
+                    'pending'     => '<span class="badge-pill badge-warn">📝 ثبت سفارش</span>',
+                    'final-check' => '<span class="badge-pill badge-info">🔍 چک نهایی</span>',
+                    'courier'     => '<span class="badge-pill badge-ok">🚚 تحویل مامور</span>',
+                ];
+                return $map[$row->status] ?? '<span class="badge-pill">?</span>';
+            })
+            ->add('channel_name', fn($row) => $row->channel ? ($row->channel->icon . ' ' . $row->channel->name) : '—')
+            ->add('created_at_fmt', fn($row) => \App\Support\PersianDate::format($row->created_at, 'Y/m/d H:i'))
+            ->add('actions', function ($row) {
+                $id = $row->id;
+                return '<div class="flex gap-1 justify-center">'
+                    . '<button onclick="Livewire.dispatch(\'open-order-view\', {orderId: ' . $id . '})" class="btn-icon" title="نمایش">👁️</button>'
+                    . '<button onclick="Livewire.dispatch(\'open-order-form\', {orderId: ' . $id . '})" class="btn-icon" title="ویرایش">✏️</button>'
+                    . '<a href="' . route('orders.show', $id) . '" wire:navigate class="btn-icon" title="صفحه کامل">📄</a>'
+                    . '</div>';
+            });
+    }
+
+    public function columns(): array
+    {
+        return [
+            Column::action('actions')
+                ->title('عملیات'),
+
+            Column::add()
+                ->title('#')
+                ->field('order_number')
+                ->searchable()
+                ->sortable(),
+
+            Column::add()
+                ->title('مشتری')
+                ->field('customer_display')
+                ->searchable()
+                ->sortable(),
+
+            Column::add()
+                ->title('تلفن')
+                ->field('phone')
+                ->searchable(),
+
+            Column::add()
+                ->title('محصولات')
+                ->field('items_summary'),
+
+            Column::add()
+                ->title('بیمه')
+                ->field('insurance_fmt')
+                ->sortable(),
+
+            Column::add()
+                ->title('وضعیت')
+                ->field('status_label')
+                ->sortable(),
+
+            Column::add()
+                ->title('کانال')
+                ->field('channel_name'),
+
+            Column::add()
+                ->title('تاریخ')
+                ->field('created_at_fmt')
+                ->sortable(),
+        ];
+    }
+
+    public function filters(): array
+    {
+        return [
+            Filter::inputText('order_number')
+                ->operators(['contains', 'starts_with', 'equals'])
+                ->placeholder('شماره...'),
+
+            Filter::inputText('customer_display')
+                ->operators(['contains', 'starts_with'])
+                ->placeholder('نام مشتری...'),
+
+            Filter::inputText('phone')
+                ->operators(['contains', 'starts_with'])
+                ->placeholder('تلفن...'),
+
+            Filter::select('status_label')
+                ->dataSource(collect([
+                    ['label' => '📝 ثبت سفارش',  'value' => 'pending'],
+                    ['label' => '🔍 چک نهایی',   'value' => 'final-check'],
+                    ['label' => '🚚 تحویل مامور', 'value' => 'courier'],
+                ]))
+                ->optionLabel('label')
+                ->optionValue('value'),
+
+            Filter::multiSelect('channel_name')
+                ->dataSource(collect(\App\Models\Channel::all())->map(fn($c) => [
+                    'label' => ($c->icon ?? '') . ' ' . $c->name,
+                    'value' => $c->icon . ' ' . $c->name,
+                ]))
+                ->optionLabel('label')
+                ->optionValue('value'),
+        ];
+    }
+
+    public function header(): array
+    {
+        return [
+            PowerGrid::actions()
+                ->addButton('open-order-form')
+                ->slot('<span>➕ سفارش جدید</span>')
+                ->class('btn btn-primary btn-sm'),
+        ];
+    }
+}

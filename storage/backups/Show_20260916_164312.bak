@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Livewire\Customers;
+
+use App\Models\Customer;
+use Livewire\Component;
+
+class Show extends Component
+{
+    public Customer $customer;
+
+    public function mount(Customer $customer): void { $this->customer = $customer; }
+
+    public function delete()
+    {
+        $name = $this->customer->name ?? $this->customer->phone;
+        $this->customer->delete();
+        session()->flash('success', "مشتری «{$name}» حذف شد.");
+        return redirect()->route('customers.index');
+    }
+
+    public function render()
+    {
+        $orders = $this->customer->orders()->with('channel')->latest('id')->limit(50)->get();
+        $totalAmount = $this->customer->orders()->sum('amount');
+        $activities = $this->customer->activities()->with('causer')->limit(20)->get();
+
+        return view('livewire.customers.show', compact('orders', 'totalAmount', 'activities'))
+            ->layout('components.layouts.app');
+    }
+}

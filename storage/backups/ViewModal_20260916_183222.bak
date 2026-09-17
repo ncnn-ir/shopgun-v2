@@ -1,0 +1,32 @@
+<?php
+
+namespace App\Livewire\Orders;
+
+use App\Models\Order;
+use Livewire\Component;
+
+class ViewModal extends Component
+{
+    public bool $show = false;
+    public ?int $orderId = null;
+
+    protected $listeners = ['open-order-view' => 'open'];
+
+    public function open(int $orderId): void
+    {
+        $this->orderId = $orderId;
+        $this->show = true;
+    }
+
+    public function close(): void
+    {
+        $this->show = false;
+        $this->orderId = null;
+    }
+
+    public function render()
+    {
+        $order = $this->orderId ? Order::with(['customer', 'channel', 'items'])->find($this->orderId) : null;
+        return view('livewire.orders.view-modal', compact('order'));
+    }
+}

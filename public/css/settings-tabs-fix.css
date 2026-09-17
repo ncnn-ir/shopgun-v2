@@ -1,0 +1,28 @@
+/* Settings Tabs — FORCE FIX v2 */
+.sg-settings-tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    padding: 10px 16px !important;
+    margin: 0 0 14px 0 !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    background: transparent !important;
+}
+.sg-settings-tab {
+    flex: 0 0 auto !important;
+    padding: 8px 14px !important;
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    background: #fff !important;
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    color: #64748b !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+}
+.sg-settings-tab.active {
+    background: linear-gradient(135deg, #1a5276, #0d3b5e) !important;
+    color: #fff !important;
+    border-color: #1a5276 !important;
+}

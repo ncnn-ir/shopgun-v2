@@ -1,0 +1,172 @@
+<?php
+
+namespace App\Livewire\Certificates;
+
+use App\Models\Certificate;
+use App\Models\Customer;
+use App\Models\Order;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+
+class Create extends Component
+{
+    use WithFileUploads;
+
+    public int $step = 1;
+
+    // سنگ و فلز
+    public string $stoneName   = '';
+    public string $stoneEn     = '';
+    public string $stoneOrigin = 'نیشابور';
+    public string $stoneFlag   = 'ir';
+    public string $stoneIcon   = '💠';
+    public string $metal       = 'نقره 925';
+    public string $metalEn     = 'Silver 925';
+    public string $metalCarat  = '925';
+
+    // مشخصات
+    public string $length    = '';
+    public string $width     = '';
+    public string $weight    = '';
+    public string $brilliant = '0';
+
+    // ارتباط
+    public ?int $customerId = null;
+    public ?int $orderId    = null;
+
+    // تصویر
+    public $image = null;
+
+    // سنگ‌های پیش‌فرض
+    public array $stoneOptions = [
+        ['name' => 'فیروزه عجمی',   'en' => 'Turquoise Ajami',   'origin' => 'نیشابور',   'flag' => 'ir', 'icon' => '💠'],
+        ['name' => 'فیروزه شجری',   'en' => 'Turquoise Shajari', 'origin' => 'نیشابور',   'flag' => 'ir', 'icon' => '💠'],
+        ['name' => 'عقیق یمانی',    'en' => 'Yemeni Agate',      'origin' => 'یمن',        'flag' => 'ye', 'icon' => '🔴'],
+        ['name' => 'عقیق سلیمانی',  'en' => 'Solomoni Agate',    'origin' => 'یمن',        'flag' => 'ye', 'icon' => '❤️'],
+        ['name' => 'عقیق شجر',      'en' => 'Dendritic Agate',   'origin' => 'یمن',        'flag' => 'ye', 'icon' => '🌿'],
+        ['name' => 'در نجف',        'en' => 'Najaf Pearl',       'origin' => 'عراق',       'flag' => 'iq', 'icon' => '⚪'],
+        ['name' => 'الماس',         'en' => 'Diamond',           'origin' => 'آفریقا',     'flag' => 'za', 'icon' => '💎'],
+        ['name' => 'یاقوت سرخ',     'en' => 'Ruby',              'origin' => 'میانمار',    'flag' => 'mm', 'icon' => '❤️'],
+        ['name' => 'یاقوت کبود',    'en' => 'Blue Sapphire',     'origin' => 'سری‌لانکا',  'flag' => 'lk', 'icon' => '🔵'],
+        ['name' => 'زمرد',          'en' => 'Emerald',           'origin' => 'کلمبیا',     'flag' => 'co', 'icon' => '🟢'],
+        ['name' => 'توپاز',         'en' => 'Topaz',             'origin' => 'برزیل',      'flag' => 'br', 'icon' => '💛'],
+        ['name' => 'آمیتیست',       'en' => 'Amethyst',          'origin' => 'برزیل',      'flag' => 'br', 'icon' => '🟣'],
+    ];
+
+    public array $metalOptions = [
+        ['name' => 'نقره 925',      'en' => 'Silver 925',      'carat' => '925'],
+        ['name' => 'نقره 999',      'en' => 'Fine Silver',     'carat' => '999'],
+        ['name' => 'طلا 18K',       'en' => 'Gold 18K',        'carat' => '750'],
+        ['name' => 'طلا 21K',       'en' => 'Gold 21K',        'carat' => '875'],
+        ['name' => 'طلا 22K',       'en' => 'Gold 22K',        'carat' => '916'],
+        ['name' => 'طلا 24K',       'en' => 'Gold 24K',        'carat' => '999'],
+        ['name' => 'پلاتین 950',    'en' => 'Platinum 950',    'carat' => '950'],
+        ['name' => 'استیل',         'en' => 'Stainless Steel', 'carat' => '-'],
+    ];
+
+    public function selectStone(int $index): void
+    {
+        $s = $this->stoneOptions[$index] ?? null;
+        if (! $s) return;
+
+        $this->stoneName   = $s['name'];
+        $this->stoneEn     = $s['en'];
+        $this->stoneOrigin = $s['origin'];
+        $this->stoneFlag   = $s['flag'];
+        $this->stoneIcon   = $s['icon'];
+    }
+
+    public function selectMetal(int $index): void
+    {
+        $m = $this->metalOptions[$index] ?? null;
+        if (! $m) return;
+
+        $this->metal      = $m['name'];
+        $this->metalEn    = $m['en'];
+        $this->metalCarat = $m['carat'];
+    }
+
+    public function nextStep(): void
+    {
+        if ($this->step === 1) {
+            $this->validate([
+                'stoneName' => 'required|string',
+                'metal'     => 'required|string',
+            ], [
+                'stoneName.required' => 'سنگ را انتخاب کن',
+                'metal.required'     => 'فلز را انتخاب کن',
+            ]);
+        }
+
+        if ($this->step === 2) {
+            $this->validate([
+                'length' => 'required|numeric|min:0',
+                'width'  => 'required|numeric|min:0',
+                'weight' => 'required|numeric|min:0',
+            ], [
+                'length.required' => 'طول الزامی است',
+                'width.required'  => 'عرض الزامی است',
+                'weight.required' => 'وزن الزامی است',
+            ]);
+        }
+
+        $this->step = min(3, $this->step + 1);
+    }
+
+    public function prevStep(): void
+    {
+        $this->step = max(1, $this->step - 1);
+    }
+
+    public function save()
+    {
+        $this->validate([
+            'stoneName' => 'required|string|max:255',
+            'metal'     => 'required|string|max:255',
+            'length'    => 'nullable|numeric|min:0',
+            'width'     => 'nullable|numeric|min:0',
+            'weight'    => 'nullable|numeric|min:0',
+            'image'     => 'nullable|image|max:5120',
+        ]);
+
+        $code   = Certificate::generateCode();
+        $serial = Certificate::generateSerial($code, $this->stoneEn ?: $this->stoneName);
+
+        $imagePath = null;
+        if ($this->image) {
+            $imagePath = $this->image->store('certificates', 'public');
+        }
+
+        $cert = Certificate::create([
+            'code'         => $code,
+            'serial'       => $serial,
+            'stone_name'   => $this->stoneName,
+            'stone_en'     => $this->stoneEn,
+            'stone_origin' => $this->stoneOrigin,
+            'stone_flag'   => $this->stoneFlag,
+            'metal'        => $this->metal,
+            'metal_en'     => $this->metalEn,
+            'metal_carat'  => $this->metalCarat,
+            'length'       => (float) ($this->length ?: 0),
+            'width'        => (float) ($this->width ?: 0),
+            'weight'       => (float) ($this->weight ?: 0),
+            'brilliant'    => (int) ($this->brilliant ?: 0),
+            'image_path'   => $imagePath,
+            'customer_id'  => $this->customerId,
+            'order_id'     => $this->orderId,
+            'issued_at'    => now(),
+        ]);
+
+        session()->flash('success', "شناسنامه #{$code} صادر شد.");
+
+        return redirect()->route('certificates.show', $cert);
+    }
+
+    public function render()
+    {
+        return view('livewire.certificates.create', [
+            'customers' => Customer::orderBy('name')->limit(200)->get(),
+            'orders'    => Order::latest('id')->limit(100)->get(),
+        ])->layout('components.layouts.app');
+    }
+}

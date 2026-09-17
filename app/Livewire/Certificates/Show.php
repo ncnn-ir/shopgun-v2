@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Livewire\Certificates;
+
+use App\Models\Certificate;
+use App\Services\CertRenderer;
+use App\Support\CertConfig;
+use Livewire\Component;
+
+class Show extends Component
+{
+    public Certificate $certificate;
+    public string $cardHtml = '';     // ★ فقط کارت (بدون iframe)
+    public string $batchHtml = '';    // ★ برای چاپ
+
+    public function mount(Certificate $certificate): void
+    {
+        $this->certificate = $certificate->load(['customer', 'order']);
+        $this->cardHtml  = CertRenderer::renderCard($this->certificate);
+        $this->batchHtml = CertRenderer::renderBatchHtml([$this->certificate]);
+    }
+
+    public function delete()
+    {
+        $code = $this->certificate->code;
+        $this->certificate->delete();
+        session()->flash('success', "شناسنامه #{$code} حذف شد.");
+        return redirect()->route('certificates.index');
+    }
+
+    public function render()
+    {
+        return view('livewire.certificates.show', [
+            'sizes' => CertConfig::sizes(),
+        ])->layout('components.layouts.app');
+    }
+}

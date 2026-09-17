@@ -1,0 +1,425 @@
+/* ═══════ Reports & Timeline Styles ═══════ */
+
+/* KPI Cards Horizontal Scroll */
+.sg-stats-row {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 4px 18px 14px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+.sg-stats-row::-webkit-scrollbar { display: none; }
+
+.sg-stat-card {
+    flex: 0 0 auto;
+    min-width: 155px;
+    max-width: 180px;
+    padding: 12px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    transition: all .2s;
+    position: relative;
+    overflow: hidden;
+}
+.sg-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,.08);
+}
+.sg-stat-card .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.sg-stat-card .icon {
+    width: 34px;height: 34px;
+    border-radius: 10px;
+    display: flex;align-items: center;justify-content: center;
+    font-size: 17px;
+}
+.sg-stat-card .trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+}
+.sg-stat-card .trend.up { background: rgba(39,174,96,.15); color: var(--success); }
+.sg-stat-card .trend.down { background: rgba(231,76,60,.15); color: var(--danger); }
+.sg-stat-card .trend.flat { background: rgba(127,140,141,.15); color: var(--text-light); }
+.sg-stat-card .num {
+    font-size: 22px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    letter-spacing: -.5px;
+}
+.sg-stat-card .lbl {
+    font-size: 10.5px;
+    color: var(--text-light);
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+/* Filters Bar */
+.sg-filters-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 0 18px 14px;
+    align-items: center;
+}
+.sg-chip {
+    padding: 7px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    background: var(--bg-card);
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--text-light);
+    transition: all .15s;
+}
+.sg-chip:hover { border-color: var(--gold); color: var(--text); }
+.sg-chip.active {
+    background: linear-gradient(135deg, var(--primary), #0d3b5e);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+/* Mini Charts */
+.sg-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+    padding: 0 18px 14px;
+}
+.sg-chart-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+}
+.sg-chart-card h3 {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+}
+
+.sg-bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 140px;
+    padding-top: 20px;
+}
+.sg-bar-chart .bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+    justify-content: flex-end;
+}
+.sg-bar-chart .bar-val {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--primary);
+    min-height: 14px;
+}
+.sg-bar-chart .bar {
+    width: 100%;
+    background: linear-gradient(180deg, #14b8a6, #0891b2);
+    border-radius: 6px 6px 0 0;
+    transition: all .3s;
+    min-height: 3px;
+}
+.sg-bar-chart .bar-lbl {
+    font-size: 9px;
+    font-family: monospace;
+    color: var(--text-light);
+    white-space: nowrap;
+}
+
+/* Donut / Pie Alternative - CSS */
+.sg-donut {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    margin: 0 auto 12px;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--seg1, #14b8a6) 0deg var(--a1, 90deg),
+        var(--seg2, #f59e0b) var(--a1, 90deg) var(--a2, 180deg),
+        var(--seg3, #3b82f6) var(--a2, 180deg) var(--a3, 270deg),
+        var(--seg4, #a855f7) var(--a3, 270deg) 360deg
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.sg-donut::after {
+    content: '';
+    position: absolute;
+    inset: 30px;
+    background: var(--bg-card);
+    border-radius: 50%;
+}
+.sg-donut .center-text {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+}
+.sg-donut .center-text .num {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+}
+.sg-donut .center-text .lbl {
+    font-size: 9px;
+    color: var(--text-light);
+    margin-top: 2px;
+}
+
+.sg-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    font-size: 11px;
+}
+.sg-legend .item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.sg-legend .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+}
+
+/* Minimal Table */
+.sg-mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11.5px;
+}
+.sg-mini-table th {
+    padding: 8px 10px;
+    text-align: right;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    border-bottom: 1px solid var(--border);
+}
+.sg-mini-table td {
+    padding: 10px;
+    border-bottom: 1px solid rgba(0,0,0,.04);
+}
+.sg-mini-table tr:last-child td { border-bottom: none; }
+.sg-mini-table tr:hover td { background: rgba(201,168,76,.04); }
+
+/* ═══════ Timeline (horizontal) ═══════ */
+.sg-timeline {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    padding: 16px 4px 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    position: relative;
+}
+.sg-timeline::-webkit-scrollbar { display: none; }
+
+.sg-tl-step {
+    flex: 1;
+    min-width: 85px;
+    text-align: center;
+    position: relative;
+    padding-top: 26px;
+}
+.sg-tl-step .tl-dot {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-light);
+    z-index: 2;
+    transition: all .2s;
+}
+.sg-tl-step.done .tl-dot {
+    background: var(--success);
+    border-color: var(--success);
+    color: #fff;
+}
+.sg-tl-step.current .tl-dot {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #fff;
+    box-shadow: 0 0 0 5px rgba(201,168,76,.25);
+    animation: sgPulse 1.5s infinite;
+}
+@keyframes sgPulse {
+    0%,100% { box-shadow: 0 0 0 5px rgba(201,168,76,.25); }
+    50% { box-shadow: 0 0 0 10px rgba(201,168,76,.05); }
+}
+.sg-tl-step::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    right: -50%;
+    width: 100%;
+    height: 2px;
+    background: var(--border);
+    z-index: 1;
+}
+.sg-tl-step:last-child::before { display: none; }
+.sg-tl-step.done::before { background: var(--success); }
+.sg-tl-step .tl-lbl {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-light);
+    margin-top: 2px;
+    line-height: 1.3;
+}
+.sg-tl-step.done .tl-lbl { color: var(--success); }
+.sg-tl-step.current .tl-lbl { color: var(--gold-dark); }
+.sg-tl-step .tl-date {
+    font-size: 8.5px;
+    font-family: monospace;
+    color: var(--text-light);
+    margin-top: 2px;
+}
+
+/* ═══════ Compact Customer Box ═══════ */
+.sg-compact-box {
+    background: linear-gradient(135deg, rgba(13,148,136,.06), rgba(8,145,178,.03));
+    border: 1.5px solid rgba(13,148,136,.2);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+}
+.sg-compact-box .header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.sg-compact-box .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #14b8a6, #0891b2);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+.sg-compact-box .name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+}
+.sg-compact-box .phone {
+    font-family: monospace;
+    font-size: 11.5px;
+    color: var(--text-light);
+    direction: ltr;
+}
+.sg-compact-box .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(13,148,136,.25);
+}
+.sg-compact-box .grid .item {
+    text-align: center;
+}
+.sg-compact-box .grid .item .val {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+.sg-compact-box .grid .item .lbl {
+    font-size: 9.5px;
+    color: var(--text-light);
+    margin-top: 3px;
+    font-weight: 600;
+}
+
+/* ═══════ Info Line (multi-value) ═══════ */
+.sg-inline-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,.03);
+    border-radius: 8px;
+    font-size: 11.5px;
+    margin-bottom: 8px;
+}
+.sg-inline-info .item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.sg-inline-info .item strong {
+    color: var(--primary);
+    font-family: monospace;
+}
+
+/* ═══════ Mobile Bar with Scroll ═══════ */
+.sg-mobile-bar-inner {
+    display: flex !important;
+    overflow-x: auto !important;
+    gap: 2px;
+    scrollbar-width: none;
+    justify-content: flex-start !important;
+    padding: 0 2px;
+}
+.sg-mobile-bar-inner::-webkit-scrollbar { display: none; }
+.sg-mobile-bar-btn {
+    flex: 0 0 auto !important;
+    min-width: 62px !important;
+    padding: 5px 6px !important;
+}
+
+/* ═══════ Modal improvements ═══════ */
+@media (max-width: 768px) {
+    .sg-stat-card { min-width: 140px; }
+    .sg-compact-box .grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+    .sg-compact-box .grid .item .val { font-size: 12.5px; }
+    .sg-compact-box .grid .item .lbl { font-size: 9px; }
+}

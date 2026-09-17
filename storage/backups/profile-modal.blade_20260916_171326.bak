@@ -1,0 +1,285 @@
+<div>
+    @if($show && $customer)
+    <div class="fixed inset-0 z-[85] flex items-start justify-center p-3 md:p-4 overflow-y-auto"
+         @keydown.escape.window="$wire.close()">
+
+        <div class="fixed inset-0 bg-black/70 backdrop-blur-md" wire:click="close"></div>
+
+        <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-3xl my-4 md:my-8 border border-base-300">
+
+            {{-- ═══ Header ═══ --}}
+            <div class="p-4 border-b border-base-300 bg-gradient-to-l from-cyan-500/10 to-transparent rounded-t-2xl">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shadow"
+                             style="background: linear-gradient(135deg, #14b8a6, #0891b2);">
+                            {{ mb_substr($customer->name ?? '?', 0, 1) }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h2 class="font-bold text-base truncate">{{ $customer->name }}</h2>
+                            <div class="text-xs text-base-content/60 font-mono" dir="ltr">
+                                {{ $customer->primaryPhone()?->formatted ?? $customer->phone ?? '—' }}
+                            </div>
+                        </div>
+                    </div>
+                    <button wire:click="close" class="btn btn-ghost btn-sm btn-circle">✕</button>
+                </div>
+
+                {{-- آمار سریع --}}
+                <div class="grid grid-cols-3 gap-2 mt-3">
+                    <div class="bg-base-200/50 rounded-lg p-2 text-center">
+                        <div class="text-lg font-bold text-primary">{{ \App\Support\PersianNumber::toFa($customer->orders->count()) }}</div>
+                        <div class="text-[10px] text-base-content/60">سفارش</div>
+                    </div>
+                    <div class="bg-base-200/50 rounded-lg p-2 text-center">
+                        <div class="text-lg font-bold text-primary">{{ \App\Support\PersianNumber::toFa($customer->phones->count()) }}</div>
+                        <div class="text-[10px] text-base-content/60">تلفن</div>
+                    </div>
+                    <div class="bg-base-200/50 rounded-lg p-2 text-center">
+                        <div class="text-lg font-bold text-primary">{{ \App\Support\PersianNumber::toFa($customer->addresses->count()) }}</div>
+                        <div class="text-[10px] text-base-content/60">آدرس</div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ═══ Tabs ═══ --}}
+            <div class="flex border-b border-base-300 bg-base-200/30 px-2 overflow-x-auto">
+                @foreach([
+                    'info'      => ['ℹ️', 'اطلاعات'],
+                    'phones'    => ['📱', 'تلفن‌ها'],
+                    'addresses' => ['📍', 'آدرس‌ها'],
+                    'orders'    => ['📦', 'سفارشات'],
+                ] as $key => $meta)
+                    <button wire:click="$set('tab','{{ $key }}')"
+                            class="px-4 py-2 text-xs font-bold whitespace-nowrap border-b-2 transition
+                                   {{ $tab === $key ? 'border-primary text-primary' : 'border-transparent text-base-content/60 hover:text-base-content' }}">
+                        {{ $meta[0] }} {{ $meta[1] }}
+                    </button>
+                @endforeach
+            </div>
+
+            {{-- ═══ Body ═══ --}}
+            <div class="p-4 max-h-[calc(100vh-20rem)] overflow-y-auto">
+
+                {{-- ═══ Tab: اطلاعات ═══ --}}
+                @if($tab === 'info')
+                    <div class="space-y-3">
+                        @if($editingInfo)
+                            <div class="bg-primary/5 border border-primary/30 rounded-lg p-3 space-y-2">
+                                <div>
+                                    <label class="text-[11px] font-bold">نام</label>
+                                    <input type="text" wire:model="editName"
+                                           class="input input-bordered input-sm w-full">
+                                    @error('editName') <span class="text-error text-[10px]">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label class="text-[11px] font-bold">ایمیل</label>
+                                    <input type="email" wire:model="editEmail" dir="ltr"
+                                           class="input input-bordered input-sm w-full">
+                                    @error('editEmail') <span class="text-error text-[10px]">{{ $message }}</span> @enderror
+                                </div>
+                                <div class="flex gap-2">
+                                    <button wire:click="saveInfo" class="btn btn-success btn-sm flex-1">✅ ذخیره</button>
+                                    <button wire:click="cancelEditInfo" class="btn btn-ghost btn-sm">انصراف</button>
+                                </div>
+                            </div>
+                        @else
+                            <div class="flex justify-end">
+                                <button wire:click="startEditInfo" class="btn btn-outline btn-xs">✏️ ویرایش</button>
+                            </div>
+                        @endif
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                            <div class="p-3 rounded-lg bg-base-200/50">
+                                <div class="text-[10px] text-base-content/60">👤 نام</div>
+                                <div class="font-bold mt-0.5">{{ $customer->name }}</div>
+                            </div>
+                            <div class="p-3 rounded-lg bg-base-200/50">
+                                <div class="text-[10px] text-base-content/60">📧 ایمیل</div>
+                                <div class="mt-0.5" dir="ltr">{{ $customer->email ?? '—' }}</div>
+                            </div>
+                            <div class="p-3 rounded-lg bg-base-200/50">
+                                <div class="text-[10px] text-base-content/60">📅 عضویت</div>
+                                <div class="mt-0.5 text-xs">{{ \App\Support\PersianDate::format($customer->created_at, 'Y/m/d') }}</div>
+                            </div>
+                            <div class="p-3 rounded-lg bg-base-200/50">
+                                <div class="text-[10px] text-base-content/60">🕐 آخرین به‌روزرسانی</div>
+                                <div class="mt-0.5 text-xs">{{ \App\Support\PersianDate::format($customer->updated_at, 'Y/m/d H:i') }}</div>
+                            </div>
+                        </div>
+
+                        <a href="{{ route('customers.show', $customer) }}"
+                           class="btn btn-outline btn-sm w-full">
+                            👁️ صفحه کامل مشتری
+                        </a>
+                    </div>
+                @endif
+
+                {{-- ═══ Tab: تلفن‌ها ═══ --}}
+                @if($tab === 'phones')
+                    <div class="space-y-2">
+                        @if($addingPhone)
+                            <div class="bg-primary/5 border border-primary/30 rounded-lg p-3 space-y-2">
+                                <div class="text-xs font-bold text-primary mb-1">➕ شماره جدید</div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="text" wire:model="newPhone" dir="ltr" placeholder="09151531301"
+                                           class="input input-bordered input-sm font-mono">
+                                    <input type="text" wire:model="newPhoneLabel" placeholder="برچسب (منزل، کار)"
+                                           class="input input-bordered input-sm">
+                                </div>
+                                @error('newPhone') <span class="text-error text-[10px]">{{ $message }}</span> @enderror
+                                <div class="flex gap-2">
+                                    <button wire:click="savePhone" class="btn btn-success btn-sm flex-1">✅ ذخیره</button>
+                                    <button wire:click="cancelAddPhone" class="btn btn-ghost btn-sm">انصراف</button>
+                                </div>
+                            </div>
+                        @else
+                            <button wire:click="startAddPhone" class="btn btn-outline btn-sm w-full">
+                                ➕ افزودن شماره جدید
+                            </button>
+                        @endif
+
+                        @forelse($customer->phones as $phone)
+                            <div class="flex items-center gap-2 p-3 rounded-lg border {{ $phone->is_primary ? 'border-success/50 bg-success/5' : 'border-base-300' }}"
+                                 wire:key="ph-{{ $phone->id }}">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2">
+                                        @if($phone->is_primary)
+                                            <span class="badge badge-success badge-xs">اصلی</span>
+                                        @endif
+                                        @if($phone->label)
+                                            <span class="badge badge-ghost badge-xs">{{ $phone->label }}</span>
+                                        @endif
+                                    </div>
+                                    <div class="font-mono text-sm mt-1" dir="ltr">{{ $phone->formatted }}</div>
+                                </div>
+                                <div class="flex gap-1">
+                                    @if(!$phone->is_primary)
+                                        <button wire:click="setPrimaryPhone({{ $phone->id }})"
+                                                class="btn btn-ghost btn-xs" title="تعیین اصلی">
+                                            ⭐
+                                        </button>
+                                    @endif
+                                    <button wire:click="deletePhone({{ $phone->id }})"
+                                            wire:confirm="حذف شود؟"
+                                            class="btn btn-ghost btn-xs text-error" title="حذف">
+                                        🗑️
+                                    </button>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-6 text-sm text-base-content/50">
+                                شماره‌ای ثبت نشده
+                            </div>
+                        @endforelse
+                    </div>
+                @endif
+
+                {{-- ═══ Tab: آدرس‌ها ═══ --}}
+                @if($tab === 'addresses')
+                    <div class="space-y-2">
+                        @if($addingAddress)
+                            <div class="bg-primary/5 border border-primary/30 rounded-lg p-3 space-y-2">
+                                <div class="text-xs font-bold text-primary mb-1">➕ آدرس جدید</div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <input type="text" wire:model="newAddress.label" placeholder="برچسب"
+                                           class="input input-bordered input-sm">
+                                    <input type="text" wire:model="newAddress.province" placeholder="استان"
+                                           class="input input-bordered input-sm">
+                                    <input type="text" wire:model="newAddress.city" placeholder="شهر"
+                                           class="input input-bordered input-sm">
+                                </div>
+                                <textarea wire:model="newAddress.address" rows="2" placeholder="آدرس کامل..."
+                                          class="textarea textarea-bordered textarea-sm w-full"></textarea>
+                                @error('newAddress.address') <span class="text-error text-[10px]">{{ $message }}</span> @enderror
+                                <input type="text" wire:model="newAddress.postal_code" dir="ltr" placeholder="کدپستی"
+                                       class="input input-bordered input-sm font-mono">
+                                <div class="flex gap-2">
+                                    <button wire:click="saveAddress" class="btn btn-success btn-sm flex-1">✅ ذخیره</button>
+                                    <button wire:click="cancelAddAddress" class="btn btn-ghost btn-sm">انصراف</button>
+                                </div>
+                            </div>
+                        @else
+                            <button wire:click="startAddAddress" class="btn btn-outline btn-sm w-full">
+                                ➕ افزودن آدرس جدید
+                            </button>
+                        @endif
+
+                        @forelse($customer->addresses as $addr)
+                            <div class="p-3 rounded-lg border {{ $addr->is_primary ? 'border-success/50 bg-success/5' : 'border-base-300' }}"
+                                 wire:key="addr-{{ $addr->id }}">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            @if($addr->is_primary)
+                                                <span class="badge badge-success badge-xs">اصلی</span>
+                                            @endif
+                                            @if($addr->label)
+                                                <span class="badge badge-ghost badge-xs">{{ $addr->label }}</span>
+                                            @endif
+                                        </div>
+                                        @if($addr->city || $addr->province)
+                                            <div class="text-xs text-base-content/70">
+                                                📍 {{ implode('، ', array_filter([$addr->city, $addr->province])) }}
+                                            </div>
+                                        @endif
+                                        <div class="text-sm mt-1">{{ $addr->address }}</div>
+                                        @if($addr->postal_code)
+                                            <div class="text-xs font-mono text-base-content/60 mt-1" dir="ltr">
+                                                📮 {{ $addr->postal_code }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <div class="flex flex-col gap-1">
+                                        @if(!$addr->is_primary)
+                                            <button wire:click="setPrimaryAddress({{ $addr->id }})"
+                                                    class="btn btn-ghost btn-xs" title="تعیین اصلی">⭐</button>
+                                        @endif
+                                        <button wire:click="deleteAddress({{ $addr->id }})"
+                                                wire:confirm="حذف شود؟"
+                                                class="btn btn-ghost btn-xs text-error" title="حذف">🗑️</button>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-6 text-sm text-base-content/50">
+                                آدرسی ثبت نشده
+                            </div>
+                        @endforelse
+                    </div>
+                @endif
+
+                {{-- ═══ Tab: سفارشات ═══ --}}
+                @if($tab === 'orders')
+                    <div class="space-y-2">
+                        @forelse($customer->orders as $order)
+                            <a href="{{ route('orders.show', $order) }}"
+                               class="block p-3 rounded-lg border border-base-300 hover:border-primary/50 hover:bg-primary/5 transition"
+                               wire:key="ord-{{ $order->id }}">
+                                <div class="flex items-center justify-between">
+                                    <div class="font-bold text-sm">#{{ $order->order_number ?? $order->id }}</div>
+                                    <div class="text-xs text-base-content/60">
+                                        {{ \App\Support\PersianDate::format($order->created_at, 'Y/m/d') }}
+                                    </div>
+                                </div>
+                                <div class="text-xs text-base-content/60 mt-1">
+                                    💰 {{ number_format((float) ($order->amount ?? 0)) }} ت
+                                </div>
+                            </a>
+                        @empty
+                            <div class="text-center py-6 text-sm text-base-content/50">
+                                سفارشی ثبت نشده
+                            </div>
+                        @endforelse
+                    </div>
+                @endif
+            </div>
+
+            {{-- ═══ Footer ═══ --}}
+            <div class="p-3 border-t border-base-300 flex justify-end gap-2 rounded-b-2xl bg-base-200/50">
+                <button wire:click="close" class="btn btn-ghost btn-sm">بستن</button>
+            </div>
+        </div>
+    </div>
+    @endif
+</div>

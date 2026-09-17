@@ -1,0 +1,156 @@
+<div class="p-3 md:p-5 max-w-6xl mx-auto space-y-4">
+    <h1 class="text-lg md:text-xl font-bold mb-2">📊 گزارش‌ها</h1>
+
+    {{-- فیلتر بازه --}}
+    <div class="sg-card p-3 flex flex-wrap items-center gap-2">
+        <span class="text-xs font-bold opacity-60">بازه:</span>
+        @foreach(['today' => 'امروز', 'week' => '۷ روز', 'month' => '۳۰ روز', 'year' => 'سال'] as $k => $v)
+            <button wire:click="setRange('{{ $k }}')"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold transition {{ $range === $k ? 'bg-primary text-white' : 'bg-black/5 dark:bg-white/5' }}">
+                {{ $v }}
+            </button>
+        @endforeach
+
+        <div class="flex-1"></div>
+
+        <a href="{{ route('reports.export.excel', ['range' => $range]) }}"
+           class="btn btn-outline btn-sm">📥 CSV</a>
+    </div>
+
+    {{-- کارت‌های اصلی --}}
+    <div class="sg-dashboard-grid">
+        <div class="sg-stat-card">
+            <div class="icon">📦</div>
+            <div class="info">
+                <div class="num">{{ \App\Support\PersianNumber::toFa($total) }}</div>
+                <div class="lbl">سفارش</div>
+            </div>
+        </div>
+        <div class="sg-stat-card">
+            <div class="icon">💰</div>
+            <div class="info">
+                <div class="num">{{ number_format($amount / 1000000, 1) }}M</div>
+                <div class="lbl">فروش</div>
+            </div>
+        </div>
+        <div class="sg-stat-card">
+            <div class="icon">📊</div>
+            <div class="info">
+                <div class="num">{{ number_format($avgAmount / 1000, 0) }}K</div>
+                <div class="lbl">میانگین</div>
+            </div>
+        </div>
+        <div class="sg-stat-card">
+            <div class="icon">👥</div>
+            <div class="info">
+                <div class="num">{{ \App\Support\PersianNumber::toFa($stats['customers']) }}</div>
+                <div class="lbl">مشتری</div>
+            </div>
+        </div>
+    </div>
+
+    {{-- وضعیت‌ها --}}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="sg-card p-3">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-orange-500/15 text-orange-600">📝</div>
+                <div>
+                    <div class="text-xs font-bold">در انتظار</div>
+                    <div class="text-lg font-bold text-orange-600">{{ \App\Support\PersianNumber::toFa($byStatus['pending']) }}</div>
+                </div>
+            </div>
+            <div class="h-1.5 rounded-full bg-orange-500/20 overflow-hidden">
+                <div class="h-full bg-orange-500" style="width: {{ $total > 0 ? ($byStatus['pending'] / $total * 100) : 0 }}%"></div>
+            </div>
+        </div>
+        <div class="sg-card p-3">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-500/15 text-blue-600">🔍</div>
+                <div>
+                    <div class="text-xs font-bold">چک نهایی</div>
+                    <div class="text-lg font-bold text-blue-600">{{ \App\Support\PersianNumber::toFa($byStatus['final-check']) }}</div>
+                </div>
+            </div>
+            <div class="h-1.5 rounded-full bg-blue-500/20 overflow-hidden">
+                <div class="h-full bg-blue-500" style="width: {{ $total > 0 ? ($byStatus['final-check'] / $total * 100) : 0 }}%"></div>
+            </div>
+        </div>
+        <div class="sg-card p-3">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-green-500/15 text-green-600">🚚</div>
+                <div>
+                    <div class="text-xs font-bold">تحویل مامور</div>
+                    <div class="text-lg font-bold text-green-600">{{ \App\Support\PersianNumber::toFa($byStatus['courier']) }}</div>
+                </div>
+            </div>
+            <div class="h-1.5 rounded-full bg-green-500/20 overflow-hidden">
+                <div class="h-full bg-green-500" style="width: {{ $total > 0 ? ($byStatus['courier'] / $total * 100) : 0 }}%"></div>
+            </div>
+        </div>
+    </div>
+
+    {{-- روند روزانه --}}
+    <div class="sg-card p-4">
+        <h2 class="text-sm font-bold mb-3">📈 روند ۷ روز اخیر</h2>
+        @php $max = collect($daily)->max('count') ?: 1; @endphp
+        <div class="flex items-end gap-1.5 h-40">
+            @foreach($daily as $d)
+                <div class="flex-1 flex flex-col items-center gap-1">
+                    <div class="text-[10px] font-bold opacity-70">{{ $d['count'] > 0 ? \App\Support\PersianNumber::toFa($d['count']) : '' }}</div>
+                    <div class="w-full rounded-t-lg bg-gradient-to-t from-teal-500 to-cyan-400 transition-all"
+                         style="height: {{ max(4, $d['count'] / $max * 100) }}%"
+                         title="{{ number_format($d['amount']) }}"></div>
+                    <div class="text-[9px] font-mono opacity-55">{{ $d['date'] }}</div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
+    {{-- بهترین مشتریان --}}
+    @if($topCustomers->count() > 0)
+        <div class="sg-card p-4">
+            <h2 class="text-sm font-bold mb-3">⭐ بهترین مشتریان</h2>
+            <div class="space-y-1">
+                @foreach($topCustomers as $i => $c)
+                    <a href="{{ route('customers.show', $c) }}" wire:navigate
+                       class="flex items-center gap-3 p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition">
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                             style="background: linear-gradient(135deg, #14b8a6, #0891b2);">
+                            {{ \App\Support\PersianNumber::toFa($i + 1) }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-bold truncate">{{ $c->name }}</div>
+                            <div class="text-[10px] font-mono opacity-55" dir="ltr">{{ $c->phone }}</div>
+                        </div>
+                        <div class="badge badge-primary badge-sm">{{ \App\Support\PersianNumber::toFa($c->orders_count) }} سفارش</div>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    {{-- آمار کلی --}}
+    <div class="sg-dashboard-grid">
+        <div class="sg-stat-card">
+            <div class="icon">🛍️</div>
+            <div class="info">
+                <div class="num">{{ \App\Support\PersianNumber::toFa($stats['products']) }}</div>
+                <div class="lbl">محصول</div>
+            </div>
+        </div>
+        <div class="sg-stat-card">
+            <div class="icon">💎</div>
+            <div class="info">
+                <div class="num">{{ \App\Support\PersianNumber::toFa($stats['certificates']) }}</div>
+                <div class="lbl">شناسنامه</div>
+            </div>
+        </div>
+        <div class="sg-stat-card">
+            <div class="icon">📊</div>
+            <div class="info">
+                <div class="num">{{ \App\Support\PersianNumber::toFa($stats['orders_total']) }}</div>
+                <div class="lbl">کل سفارش</div>
+            </div>
+        </div>
+    </div>
+</div>

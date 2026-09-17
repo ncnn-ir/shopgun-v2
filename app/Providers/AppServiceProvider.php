@@ -1,0 +1,56 @@
+<?php
+
+namespace App\Providers;
+
+use App\Models\Order;
+use App\Observers\OrderObserver;
+use App\Support\PersianNumber;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    public function register(): void {}
+
+    public function boot(): void
+    {
+
+        // ═══ app_settings_shared ═══
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('app_settings')) {
+                view()->composer('*', function ($view) {
+                    $view->with('appSettingsData', [
+                        'theme'         => \App\Models\AppSetting::get('theme', 'light'),
+                        'primary_color' => \App\Models\AppSetting::get('primary_color', '#0d9488'),
+                        'density'       => \App\Models\AppSetting::get('density', 'normal'),
+                        'shop_name'     => \App\Models\AppSetting::get('shop_name', 'جواهری مشاهیر'),
+                    ]);
+                });
+            }
+        } catch (\Throwable $e) {
+            // silent
+        }
+
+        Order::observe(OrderObserver::class);
+
+        // @faNum($value) — نمایش عدد با اعداد فارسی
+        Blade::directive('faNum', function ($expression) {
+            return "<?php echo e(\App\Support\PersianNumber::toFa($expression)); ?>";
+        });
+
+        // @faMoney($value) — عدد با جداکننده هزارگان
+        Blade::directive('faMoney', function ($expression) {
+            return "<?php echo e(\App\Support\PersianNumber::toFa(number_format((float) ($expression ?? 0)))); ?>";
+        });
+
+        // @jdate($date, $format) — تاریخ شمسی
+        Blade::directive('jdate', function ($expression) {
+            return "<?php echo e(\App\Support\PersianDate::format($expression ?? now(), 'Y/m/d H:i')); ?>";
+        });
+
+        // ماکرو برای تنظیم اعداد فارسی
+        Blade::stringable(function (\DateTimeInterface $date) {
+            return \App\Support\PersianDate::format($date);
+        });
+    }
+}

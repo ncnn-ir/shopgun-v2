@@ -1,0 +1,151 @@
+<div>
+    @if($show && $certificate)
+    <div class="fixed inset-0 z-[85] flex items-start justify-center p-4 overflow-y-auto"
+         x-data="{ show: true }" x-init="$nextTick(() => { show = true; setTimeout(renderCertPreview, 150); })"
+         @keydown.escape.window="$wire.close()">
+
+        <div class="fixed inset-0 bg-black/70 backdrop-blur-md"
+             x-show="show" x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+             wire:click="close"></div>
+
+        <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-3xl my-8 md:my-16 border border-base-300"
+             x-show="show" x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0 translate-y-8 scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 scale-100">
+
+            <div class="flex items-center justify-between p-4 border-b border-base-300 bg-gradient-to-l from-cyan-500/10 to-transparent rounded-t-2xl">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center text-white shadow" style="background: linear-gradient(135deg, #14b8a6, #0891b2);">💎</div>
+                    <div>
+                        <h2 class="font-bold text-base">شناسنامه #{{ $certificate->code }}</h2>
+                        <div class="text-xs text-base-content/60 font-mono" dir="ltr">{{ $certificate->serial }}</div>
+                    </div>
+                </div>
+                <button wire:click="close" class="btn btn-ghost btn-sm btn-circle">✕</button>
+            </div>
+
+            <div class="p-5 space-y-4 max-h-[calc(100vh-14rem)] overflow-y-auto">
+
+                {{-- پیش‌نمایش با iframe --}}
+                <div class="flex justify-center bg-base-200/50 rounded-lg p-4">
+                    <div id="certPreviewMount"
+                         style="width: 340px; height: 340px; border-radius: 8px; overflow: hidden; background: #fffef9; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    </div>
+                </div>
+
+                {{-- اطلاعات --}}
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                    <div class="p-3 rounded-lg bg-base-200/50">
+                        <div class="text-[10px] text-base-content/60">💎 سنگ</div>
+                        <div class="font-bold mt-0.5">{{ $certificate->stone_name }}</div>
+                    </div>
+                    <div class="p-3 rounded-lg bg-base-200/50">
+                        <div class="text-[10px] text-base-content/60">⚙️ فلز</div>
+                        <div class="mt-0.5">{{ $certificate->metal }} ({{ $certificate->metal_carat }})</div>
+                    </div>
+                    <div class="p-3 rounded-lg bg-base-200/50">
+                        <div class="text-[10px] text-base-content/60">📐 ابعاد</div>
+                        <div class="mt-0.5">{{ $certificate->dimension }} mm</div>
+                    </div>
+                    <div class="p-3 rounded-lg bg-base-200/50">
+                        <div class="text-[10px] text-base-content/60">⚖️ وزن</div>
+                        <div class="mt-0.5">{{ $certificate->weight_clean }} gr</div>
+                    </div>
+                    <div class="p-3 rounded-lg bg-base-200/50">
+                        <div class="text-[10px] text-base-content/60">👤 مشتری</div>
+                        <div class="mt-0.5">{{ $certificate->customer?->name ?? '—' }}</div>
+                    </div>
+                    <div class="p-3 rounded-lg bg-base-200/50">
+                        <div class="text-[10px] text-base-content/60">📅 صدور</div>
+                        <div class="mt-0.5 text-xs">{{ \App\Support\PersianDate::format($certificate->issued_at ?? now(), 'Y/m/d') }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-base-300 flex flex-wrap justify-end gap-2 rounded-b-2xl bg-base-200/50">
+                <button wire:click="close" class="btn btn-ghost btn-sm">بستن</button>
+                <button onclick="printCertView()" class="btn btn-info btn-sm">🖨️ چاپ</button>
+                <button onclick="exportCertViewPng()" class="btn btn-success btn-sm">📸 PNG</button>
+                <a href="{{ route('certificates.show', $certificate) }}" class="btn btn-outline btn-sm">صفحه کامل</a>
+            </div>
+        </div>
+    </div>
+    @endif
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+let certHtmlRaw = @json($html);
+
+function renderCertPreview() {
+    const mount = document.getElementById('certPreviewMount');
+    if (!mount) return;
+
+    mount.innerHTML = '';
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'certViewFrame';
+    iframe.style.cssText = 'width: 100%; height: 100%; border: 0; background: #fffef9;';
+    iframe.setAttribute('sandbox', 'allow-same-origin');
+    iframe.srcdoc = certHtmlRaw;
+
+    mount.appendChild(iframe);
+}
+
+// renderCertPreview رو به window وصل کن
+window.renderCertPreview = renderCertPreview;
+
+document.addEventListener('DOMContentLoaded', () => setTimeout(renderCertPreview, 100));
+document.addEventListener('livewire:navigated', () => setTimeout(renderCertPreview, 100));
+
+if (window.Livewire) {
+    Livewire.hook('morphed', () => {
+        if (document.getElementById('certPreviewMount')) {
+            setTimeout(renderCertPreview, 80);
+        }
+    });
+}
+
+function getCertElement() {
+    const frame = document.getElementById('certViewFrame');
+    if (!frame) return null;
+    const doc = frame.contentDocument || frame.contentWindow.document;
+    return doc.querySelector('.cert');
+}
+
+function printCertView() {
+    const frame = document.getElementById('certViewFrame');
+    if (!frame) { alert('کارت پیدا نشد'); return; }
+    const w = window.open('', '', 'width=900,height=900');
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Print</title></head><body style="margin:0;display:flex;justify-content:center;align-items:center;padding:20px;background:#fff;">`);
+    w.document.write(frame.srcdoc.replace(/<\/?html[^>]*>|<\/?head>|<\/?body[^>]*>|<!DOCTYPE[^>]*>|<meta[^>]*>|<title>[^<]*<\/title>/gi, ''));
+    w.document.write('</body></html>');
+    w.document.close();
+    setTimeout(() => { w.print(); setTimeout(() => w.close(), 500); }, 600);
+}
+
+async function exportCertViewPng() {
+    const cert = getCertElement();
+    if (!cert) { alert('کارت پیدا نشد'); return; }
+
+    try {
+        if (typeof safeHtml2Canvas !== 'function') {
+            alert('کتابخانه تصویرگیری آماده نیست');
+            return;
+        }
+        const canvas = await safeHtml2Canvas(cert, {
+            scale: 3,
+            backgroundColor: '#fffef9',
+        });
+
+        const a = document.createElement('a');
+        a.download = 'certificate-{{ $certificate->code ?? 'cert' }}.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+    } catch (e) {
+        console.error(e);
+        alert('خطا در ساخت تصویر');
+    }
+}
+</script>
