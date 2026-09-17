@@ -4,6 +4,7 @@ namespace App\Livewire\Certificates;
 
 use App\Models\Certificate;
 use App\Services\CertRenderer;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class ViewModal extends Component
@@ -12,18 +13,22 @@ class ViewModal extends Component
     public ?int $certId = null;
     public ?Certificate $certificate = null;
     public string $cardHtml = '';
-    public string $batchHtml = '';
 
-    protected $listeners = ['open-cert-view' => 'open'];
-
-    public function open(int $certId): void
+    #[On('open-cert-view')]
+    public function open($certId = null): void
     {
-        $this->certId = $certId;
-        $this->certificate = Certificate::with(['customer', 'order'])->find($certId);
+        if (!is_numeric($certId)) return;
+
+        $this->certId = (int) $certId;
+        $this->certificate = Certificate::with(['customer', 'order'])->find($this->certId);
 
         if ($this->certificate) {
-            $this->cardHtml  = CertRenderer::renderCard($this->certificate);
-            $this->batchHtml = CertRenderer::renderBatchHtml([$this->certificate]);
+            try {
+                $this->cardHtml = CertRenderer::renderCard($this->certificate);
+            } catch (\Throwable $e) {
+                $this->cardHtml = '<div style="padding:20px;color:#dc2626">خطا در رندر: '
+                    . htmlspecialchars($e->getMessage()) . '</div>';
+            }
         }
         $this->show = true;
     }
@@ -34,7 +39,25 @@ class ViewModal extends Component
         $this->certId = null;
         $this->certificate = null;
         $this->cardHtml = '';
-        $this->batchHtml = '';
+    }
+
+    public function edit(): void
+    {
+        if (!$this->certificate) return;
+        $id = $this->certificate->id;
+        $this->close();
+        // ★ dispatch به Create modal
+        $this->dispatch('open-cert-form', certId: $id);
+    }
+
+    public function delete(): void
+    {
+        if (!$this->certificate) return;
+        $code = $this->certificate->code;
+        $this->certificate->delete();
+        $this->close();
+        $this->dispatch('cert-saved');
+        $this->dispatch('notify', type: 'success', message: "شناسنامه #{$code} حذف شد");
     }
 
     public function render()

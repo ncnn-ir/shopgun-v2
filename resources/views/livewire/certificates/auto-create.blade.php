@@ -1,0 +1,132 @@
+<div>
+@if($show)
+<div style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:98;display:flex;align-items:flex-start;justify-content:center;padding:10px;overflow-y:auto"
+     @keydown.escape.window="$wire.close()">
+
+    <div style="background:#fff;width:100%;max-width:1000px;margin:10px auto;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:hidden;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif">
+
+        <div style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
+            <h2 style="margin:0;font-size:16px;font-weight:700">⚡ صدور خودکار شناسنامه از SKU</h2>
+            <button type="button" wire:click="close" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;border:none;cursor:pointer;font-size:15px">X</button>
+        </div>
+
+        <div style="padding:16px;max-height:calc(100vh - 180px);overflow-y:auto">
+
+            {{-- ═══ کادر سرچ ═══ --}}
+            <div style="margin-bottom:16px;padding:16px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #16a34a;border-radius:12px">
+                <label style="display:block;font-size:14px;font-weight:700;color:#15803d;margin-bottom:10px">
+                    🔍 کد SKU محصول را از سایت وارد کن:
+                </label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <input type="text" wire:model="sku"
+                           wire:keydown.enter="searchBySku"
+                           dir="ltr" autofocus
+                           placeholder="مثلاً 35440"
+                           style="flex:1;min-width:200px;padding:12px 16px;border:2px solid #cbd5e1;border-radius:10px;font-family:monospace;font-size:16px;background:#fff;box-sizing:border-box;outline:none">
+
+                    <button type="button" wire:click="searchBySku"
+                            wire:loading.attr="disabled"
+                            style="padding:12px 28px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;font-family:inherit;min-width:130px">
+                        <span wire:loading.remove wire:target="searchBySku">⚡ جستجو</span>
+                        <span wire:loading wire:target="searchBySku">⏳...</span>
+                    </button>
+                </div>
+
+                @if($status)
+                    <div style="margin-top:10px;font-size:13px;font-weight:700;color:{{ str_starts_with($status, '✅') ? '#15803d' : (str_starts_with($status, '⏳') ? '#0891b2' : '#dc2626') }}">
+                        {{ $status }}
+                    </div>
+                @endif
+            </div>
+
+            @if(!empty($product))
+                <div style="display:grid;grid-template-columns:1fr;gap:14px">
+
+                    {{-- محصول --}}
+                    <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px;display:grid;grid-template-columns:120px 1fr;gap:14px">
+                        @if(!empty($product['image']))
+                            <img src="{{ $product['image'] }}" style="width:120px;height:120px;object-fit:cover;border-radius:10px;border:1px solid #e2e8f0">
+                        @else
+                            <div style="width:120px;height:120px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:48px">💎</div>
+                        @endif
+                        <div>
+                            <div style="font-weight:700;font-size:15px;color:#1e293b;margin-bottom:8px">{{ $product['name'] }}</div>
+                            <div style="font-size:12px;color:#64748b">
+                                <b>SKU:</b> <span style="font-family:monospace" dir="ltr">{{ $product['sku'] }}</span>
+                                &nbsp;|&nbsp; <b>قیمت:</b> {{ number_format($product['price']) }} تومان
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- فیلدهای قابل ویرایش --}}
+                    <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px">
+                        <h3 style="margin:0 0 12px;font-size:13px;font-weight:700;color:#1a5276;padding-bottom:8px;border-bottom:1px solid #e2e8f0">
+                            ✏️ اطلاعات شناسنامه (قابل ویرایش)
+                        </h3>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">
+                            <div>
+                                <label style="font-size:10px;font-weight:700;color:#64748b;display:block;margin-bottom:3px">سنگ (فارسی)</label>
+                                <input type="text" wire:model.live.debounce.300ms="stoneName" style="width:100%;padding:7px 10px;border:1.5px solid #cbd5e1;border-radius:6px;font-size:12px;box-sizing:border-box">
+                            </div>
+                            <div>
+                                <label style="font-size:10px;font-weight:700;color:#64748b;display:block;margin-bottom:3px">سنگ (انگلیسی)</label>
+                                <input type="text" wire:model.live.debounce.300ms="stoneEn" dir="ltr" style="width:100%;padding:7px 10px;border:1.5px solid #cbd5e1;border-radius:6px;font-size:12px;box-sizing:border-box">
+                            </div>
+                            <div>
+                                <label style="font-size:10px;font-weight:700;color:#64748b;display:block;margin-bottom:3px">اصالت</label>
+                                <input type="text" wire:model.live.debounce.300ms="stoneOrigin" style="width:100%;padding:7px 10px;border:1.5px solid #cbd5e1;border-radius:6px;font-size:12px;box-sizing:border-box">
+                            </div>
+                            <div>
+                                <label style="font-size:10px;font-weight:700;color:#64748b;display:block;margin-bottom:3px">فلز</label>
+                                <input type="text" wire:model.live.debounce.300ms="metal" style="width:100%;padding:7px 10px;border:1.5px solid #cbd5e1;border-radius:6px;font-size:12px;box-sizing:border-box">
+                            </div>
+                            <div>
+                                <label style="font-size:10px;font-weight:700;color:#64748b;display:block;margin-bottom:3px">عیار</label>
+                                <input type="text" wire:model.live.debounce.300ms="metalCarat" dir="ltr" style="width:100%;padding:7px 10px;border:1.5px solid #cbd5e1;border-radius:6px;font-size:12px;font-family:monospace;box-sizing:border-box">
+                            </div>
+                            <div>
+                                <label style="font-size:10px;font-weight:700;color:#64748b;display:block;margin-bottom:3px">طول (mm)</label>
+                                <input type="number" wire:model.live.debounce.300ms="length" dir="ltr" style="width:100%;padding:7px 10px;border:1.5px solid #cbd5e1;border-radius:6px;font-size:12px;font-family:monospace;box-sizing:border-box">
+                            </div>
+                            <div>
+                                <label style="font-size:10px;font-weight:700;color:#64748b;display:block;margin-bottom:3px">عرض (mm)</label>
+                                <input type="number" wire:model.live.debounce.300ms="width" dir="ltr" style="width:100%;padding:7px 10px;border:1.5px solid #cbd5e1;border-radius:6px;font-size:12px;font-family:monospace;box-sizing:border-box">
+                            </div>
+                            <div>
+                                <label style="font-size:10px;font-weight:700;color:#64748b;display:block;margin-bottom:3px">وزن (گرم)</label>
+                                <input type="number" wire:model.live.debounce.300ms="weight" dir="ltr" step="0.01" style="width:100%;padding:7px 10px;border:1.5px solid #cbd5e1;border-radius:6px;font-size:12px;font-family:monospace;box-sizing:border-box">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- پیش‌نمایش --}}
+                    <div style="background:repeating-conic-gradient(#f0f0f0 0% 25%, #fff 0% 50%) 50% / 20px 20px;border:1.5px solid #e2e8f0;border-radius:12px;padding:20px;display:flex;justify-content:center;align-items:center;min-height:350px;overflow:auto">
+                        @if($previewHtml)
+                            {!! $previewHtml !!}
+                        @else
+                            <div style="color:#94a3b8;font-size:13px">👁️ پیش‌نمایش کارت</div>
+                        @endif
+                    </div>
+                </div>
+            @endif
+        </div>
+
+        <div style="padding:12px 18px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;gap:8px">
+            <button type="button" wire:click="close"
+                    style="padding:9px 20px;background:#fff;color:#475569;border:1.5px solid #cbd5e1;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">
+                انصراف
+            </button>
+
+            @if(!empty($product))
+                <button type="button" wire:click="save"
+                        wire:loading.attr="disabled"
+                        style="padding:9px 24px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">
+                    <span wire:loading.remove wire:target="save">✓ صدور شناسنامه</span>
+                    <span wire:loading wire:target="save">⏳ در حال ذخیره...</span>
+                </button>
+            @endif
+        </div>
+    </div>
+</div>
+@endif
+</div>

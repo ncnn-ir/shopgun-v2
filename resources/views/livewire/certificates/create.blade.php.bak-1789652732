@@ -1,0 +1,150 @@
+<div>
+@if($show)
+<div style="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:95;display:flex;align-items:flex-start;justify-content:center;padding:10px;overflow-y:auto"
+     wire:key="cert-form-{{ $editingId ?? 'new' }}"
+     @keydown.escape.window="$wire.closeModal()">
+
+    <div style="background:#fff;width:100%;max-width:880px;margin:10px auto;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif">
+
+        <div style="background:linear-gradient(135deg,#1a5276,#0d3b5e);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
+            <h2 style="margin:0;font-size:16px;font-weight:700">{{ $editingId ? '✏️ ویرایش شناسنامه' : '💎 شناسنامه جدید' }}</h2>
+            <button type="button" wire:click="closeModal" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;border:none;cursor:pointer;font-size:15px">X</button>
+        </div>
+
+        <div style="padding:16px;max-height:calc(100vh - 180px);overflow-y:auto">
+
+            {{-- Steps --}}
+            <div style="display:flex;justify-content:space-between;margin-bottom:24px;position:relative;padding:0 20px">
+                <div style="position:absolute;top:18px;left:60px;right:60px;height:2px;background:#e2e8f0;z-index:0"></div>
+                @foreach([1 => 'سنگ و فلز', 2 => 'مشخصات', 3 => 'تصویر'] as $num => $label)
+                    <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;flex:1">
+                        <div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;
+                            background:{{ $step >= $num ? 'linear-gradient(135deg,#1a5276,#0d3b5e)' : '#f1f5f9' }};
+                            color:{{ $step >= $num ? '#fff' : '#64748b' }};">
+                            {{ $num }}
+                        </div>
+                        <div style="font-size:11px;font-weight:700;margin-top:6px;color:{{ $step >= $num ? '#1a5276' : '#94a3b8' }}">{{ $label }}</div>
+                    </div>
+                @endforeach
+            </div>
+
+            @if($step === 1)
+                <div style="margin-bottom:20px">
+                    <h3 style="font-size:14px;font-weight:700;color:#1a5276;margin:0 0 12px">💎 سنگ را انتخاب کن</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px">
+                        @foreach($stoneOptions as $i => $s)
+                            <button type="button" wire:click="selectStone({{ $i }})"
+                                    style="padding:10px 4px;border:2px solid {{ $stoneName === $s['name'] ? '#c9a84c' : '#e2e8f0' }};background:{{ $stoneName === $s['name'] ? '#fef3c7' : '#fff' }};border-radius:10px;cursor:pointer">
+                                <div style="font-size:26px;margin-bottom:4px">{{ $s['icon'] }}</div>
+                                <div style="font-size:11px;font-weight:700;color:#1e293b">{{ $s['name'] }}</div>
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div>
+                    <h3 style="font-size:14px;font-weight:700;color:#1a5276;margin:0 0 12px">⚙️ فلز را انتخاب کن</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px">
+                        @foreach($metalOptions as $i => $m)
+                            <button type="button" wire:click="selectMetal({{ $i }})"
+                                    style="padding:12px 6px;border:2px solid {{ $metal === $m['name'] ? '#c9a84c' : '#e2e8f0' }};background:{{ $metal === $m['name'] ? '#fef3c7' : '#fff' }};border-radius:10px;cursor:pointer;font-weight:700;font-size:12px;color:#1e293b">
+                                {{ $m['name'] }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            @if($step === 2)
+                <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);padding:10px 14px;border-radius:10px;margin-bottom:16px;font-size:13px;font-weight:700;color:#78350f">
+                    💎 {{ $stoneName }} — ⚙️ {{ $metal }}
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px">
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">طول (mm)</label>
+                        <input type="number" step="0.01" wire:model="length" dir="ltr"
+                               style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-family:monospace;font-size:13px;background:#f8fafc;box-sizing:border-box;text-align:center">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">عرض (mm)</label>
+                        <input type="number" step="0.01" wire:model="width" dir="ltr"
+                               style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-family:monospace;font-size:13px;background:#f8fafc;box-sizing:border-box;text-align:center">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">وزن (گرم)</label>
+                        <input type="number" step="0.001" wire:model="weight" dir="ltr"
+                               style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-family:monospace;font-size:13px;background:#f8fafc;box-sizing:border-box;text-align:center">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">عیار</label>
+                        <input type="text" value="{{ $metalCarat }}" readonly dir="ltr"
+                               style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-family:monospace;font-size:13px;background:#e2e8f0;box-sizing:border-box;text-align:center">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">برلیان</label>
+                        <input type="number" wire:model="brilliant" dir="ltr"
+                               style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-family:monospace;font-size:13px;background:#f8fafc;box-sizing:border-box;text-align:center">
+                    </div>
+                </div>
+            @endif
+
+            @if($step === 3)
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">👤 مشتری (اختیاری)</label>
+                        <select wire:model="customerId" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;background:#f8fafc;box-sizing:border-box">
+                            <option value="">— بدون مشتری —</option>
+                            @foreach($customers as $c)
+                                <option value="{{ $c->id }}">{{ $c->name }} — {{ $c->phone }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">📦 سفارش (اختیاری)</label>
+                        <select wire:model="orderId" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;background:#f8fafc;box-sizing:border-box">
+                            <option value="">— بدون سفارش —</option>
+                            @foreach($orders as $o)
+                                <option value="{{ $o->id }}">#{{ $o->order_number }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">📸 تصویر محصول</label>
+                    <input type="file" wire:model="image" accept="image/*"
+                           style="width:100%;padding:8px;border:1.5px dashed #cbd5e1;border-radius:8px;background:#f8fafc;box-sizing:border-box">
+                    @if($image)
+                        <div style="margin-top:10px"><img src="{{ $image->temporaryUrl() }}" style="max-width:120px;border-radius:10px;border:2px solid #c9a84c"></div>
+                    @endif
+                </div>
+            @endif
+        </div>
+
+        <div style="padding:12px 18px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;gap:8px">
+            <div>
+                @if($step > 1)
+                    <button type="button" wire:click="prevStep"
+                            style="padding:9px 18px;background:#f1f5f9;color:#475569;border:1.5px solid #cbd5e1;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">→ قبل</button>
+                @endif
+            </div>
+            <div style="display:flex;gap:8px">
+                <button type="button" wire:click="closeModal"
+                        style="padding:9px 18px;background:#fff;color:#475569;border:1.5px solid #cbd5e1;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">انصراف</button>
+                @if($step < 3)
+                    <button type="button" wire:click="nextStep"
+                            style="padding:9px 22px;background:linear-gradient(135deg,#1a5276,#0d3b5e);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">بعد ←</button>
+                @else
+                    <button type="button" wire:click="save" wire:loading.attr="disabled"
+                            style="padding:9px 22px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">
+                        <span wire:loading.remove wire:target="save">✓ ذخیره</span>
+                        <span wire:loading wire:target="save">⏳...</span>
+                    </button>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+</div>

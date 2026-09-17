@@ -1,4 +1,4 @@
-<div class="p-4 md:p-6 space-y-4" dir="rtl" x-data="healthPage()">
+<div class="p-4 md:p-6 space-y-4" dir="rtl" >
 
     {{-- ═══ Header با دکمه‌ها ═══ --}}
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -11,10 +11,10 @@
                 <span wire:loading.remove wire:target="refresh">🔄 بروزرسانی</span>
                 <span wire:loading wire:target="refresh">⏳...</span>
             </button>
-            <button @click="copyText(@js($this->full_report))" class="btn btn-primary btn-sm">
+            <button @click="window.sgCopy(@js($this->full_report))" class="btn btn-primary btn-sm">
                 📋 کپی کامل
             </button>
-            <button @click="copyText(@js($this->error_report))" class="btn btn-error btn-sm">
+            <button @click="window.sgCopy(@js($this->error_report))" class="btn btn-error btn-sm">
                 📋 فقط خطاها
             </button>
         </div>
@@ -250,7 +250,7 @@
         <div class="card-body p-4">
             <h2 class="font-bold text-base mb-3 flex items-center justify-between">
                 <span>📋 جدول خلاصه گزارش</span>
-                <button @click="copyText(@js($this->full_report))" class="btn btn-primary btn-xs">
+                <button @click="window.sgCopy(@js($this->full_report))" class="btn btn-primary btn-xs">
                     📋 کپی همه
                 </button>
             </h2>
@@ -290,7 +290,7 @@
                             </td>
                             <td class="text-xs">{{ $total - $ok }} مورد نصب نیست</td>
                             <td>
-                                <button @click="copyText(@js($this->error_report))" class="btn btn-ghost btn-xs">📋</button>
+                                <button @click="window.sgCopy(@js($this->error_report))" class="btn btn-ghost btn-xs">📋</button>
                             </td>
                         </tr>
                         <tr>
@@ -331,7 +331,7 @@
             <div class="flex items-center justify-between p-4 border-b border-base-300 bg-gradient-to-l from-primary/10 to-transparent rounded-t-2xl">
                 <h2 class="font-bold text-base">📋 گزارش کامل</h2>
                 <div class="flex gap-2">
-                    <button @click="copyText(@js($reportText))" class="btn btn-primary btn-sm">📋 کپی</button>
+                    <button @click="window.sgCopy(@js($reportText))" class="btn btn-primary btn-sm">📋 کپی</button>
                     <button wire:click="closeReportModal" class="btn btn-ghost btn-sm btn-circle">✕</button>
                 </div>
             </div>

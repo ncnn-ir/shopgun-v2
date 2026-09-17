@@ -11,7 +11,7 @@
         <div class="flex flex-wrap gap-2">
             <a href="{{ $certificate->public_url }}" target="_blank" class="btn btn-outline btn-sm">🔗 لینک</a>
             <a href="{{ route('certificates.designer', $certificate->id) }}" class="btn btn-secondary btn-sm">🎨 ویرایشگر</a>
-            <button onclick="printCurrentCert()" class="btn btn-info btn-sm">🖨️ چاپ</button>
+            <button onclick="window.open('{{ route("certificates.print", ["ids" => $certificate->id, "auto" => 1]) }}', '_blank')" class="btn btn-info btn-sm">🖨️ چاپ</button>
             <button onclick="exportCurrentCertPng()" class="btn btn-success btn-sm">📸 PNG</button>
             <button wire:click="delete" wire:confirm="حذف شود؟" class="btn btn-error btn-sm">🗑️</button>
         </div>
@@ -78,7 +78,7 @@
 </div>
 
 {{-- ★ template برای چاپ --}}
-<script type="text/template" id="cert-batch-template">{!! $batchHtml !!}</script>
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
@@ -106,28 +106,7 @@
     };
 
     // ★ چاپ
-    window.printCurrentCert = function () {
-        var tmpl = document.getElementById('cert-batch-template');
-        if (!tmpl) { alert('کارت پیدا نشد'); return; }
-        var html = tmpl.innerHTML;
-
-        var iframe = document.createElement('iframe');
-        iframe.style.cssText = 'position:fixed;left:-99999px;top:0;width:0;height:0;border:0;';
-        document.body.appendChild(iframe);
-        var doc = iframe.contentDocument || iframe.contentWindow.document;
-        doc.open();
-        doc.write(html);
-        doc.close();
-        setTimeout(function () {
-            try {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
-            } catch (e) { console.error(e); }
-            setTimeout(function () {
-                if (iframe.parentNode) document.body.removeChild(iframe);
-            }, 3000);
-        }, 800);
-    };
+    
 
     // ★ PNG
     window.exportCurrentCertPng = function () {

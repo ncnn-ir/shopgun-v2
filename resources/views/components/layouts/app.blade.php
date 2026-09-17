@@ -47,7 +47,7 @@
         }
         body { font-family: var(--font-dynamic), 'Vazirmatn', Tahoma, sans-serif !important; }
     </style>
-    <link rel="stylesheet" href="{{ asset('css/extra.css?v=4">
+    <link rel="stylesheet" href="{{ asset('css/extra.css') }}?v=4">
 
     {{-- PowerGrid Assets --}}
     @powerGridStyles
@@ -56,13 +56,13 @@
 <body>
 
 @auth
-    <livewire:global-search />
     <livewire:components.shipment-timeline />
     <livewire:orders.import-postal :key="'imp'" />
     <livewire:orders.form-modal :key="'ofm'" />
     <livewire:orders.view-modal :key="'ovm'" />
     <livewire:customers.profile-modal :key="'cpm'" />
     <livewire:certificates.view-modal :key="'cvm'" />
+    <livewire:certificates.create :key="'ccm'" />
 @endauth
 
 {{-- ═══ Header ═══ --}}
@@ -113,9 +113,14 @@
 </div>
 
 {{-- ═══ Main Content ═══ --}}
-<main>
-    {{ $slot }}
-</main>
+<div class="sg-layout">
+    @include('components.layouts.sidebar')
+    <div class="sg-content-area">
+        <main>
+            {{ $slot }}
+        </main>
+    </div>
+</div>
 
 {{-- ═══ Mobile Bar ═══ --}}
 <nav class="sg-mobile-bar">
@@ -263,18 +268,9 @@
     });
 </script>
 
-
-    {{-- Jalali Datepicker --}}
-    @stack('jalali-scripts')
-@routes
-    
-    {{-- Jalali Datepicker --}}
-    @stack('jalali-scripts')
 @livewireScripts
 @stack('scripts')
-
-    {{-- PowerGrid Scripts --}}
-    @powerGridScripts
+@powerGridScripts
 
 </body>
 </html>

@@ -1,150 +1,238 @@
-<div class="p-4 md:p-6 max-w-3xl mx-auto">
-    <div class="flex items-center gap-3 mb-6">
-        <a href="{{ route('certificates.index') }}" class="btn btn-ghost btn-sm">→</a>
-        <h1 class="text-xl md:text-2xl font-bold">💎 شناسنامه جدید</h1>
-    </div>
+<div>
+@if($show)
+<div style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:97;display:flex;align-items:flex-start;justify-content:center;padding:10px;overflow-y:auto"
+     wire:key="cert-form-{{ $editingId ?? 'new' }}"
+     @keydown.escape.window="$wire.closeModal()">
 
-    {{-- Step indicator --}}
-    <ul class="steps steps-horizontal w-full mb-6 text-xs">
-        <li class="step {{ $step >= 1 ? 'step-primary' : '' }}">سنگ/فلز</li>
-        <li class="step {{ $step >= 2 ? 'step-primary' : '' }}">مشخصات</li>
-        <li class="step {{ $step >= 3 ? 'step-primary' : '' }}">تصویر</li>
-    </ul>
+    <div style="background:#fff;width:100%;max-width:880px;margin:10px auto;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:hidden;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif">
 
-    <div class="card bg-base-100 shadow">
-        <div class="card-body gap-5">
+        <div style="background:linear-gradient(135deg,#1a5276,#0d3b5e);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
+            <h2 style="margin:0;font-size:16px;font-weight:700">
+                {{ $editingId ? '✏️ ویرایش شناسنامه' : '💎 شناسنامه جدید' }}
+            </h2>
+            <button type="button" wire:click="closeModal" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;border:none;cursor:pointer;font-size:15px">X</button>
+        </div>
 
-            {{-- ========== STEP 1 ========== --}}
+        <div style="padding:16px;max-height:calc(100vh - 180px);overflow-y:auto">
+
+            {{-- ★★★ کادر سرچ SKU — فقط در حالت ایجاد، بالای همه --}}
+            @if(!$editingId)
+                <div style="margin-bottom:18px;padding:14px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #16a34a;border-radius:12px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                        <label style="font-size:13px;font-weight:700;color:#15803d">
+                            🔍 جستجوی خودکار از سایت (اختیاری)
+                        </label>
+                        @if($searchedProduct)
+                            <button type="button" wire:click="clearSearch"
+                                    style="background:#fee2e2;color:#dc2626;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:700">
+                                ✕ پاک کردن
+                            </button>
+                        @endif
+                    </div>
+
+                    <div style="display:flex;gap:8px">
+                        <input type="text" wire:model="skuSearch"
+                               wire:keydown.enter="searchBySku"
+                               dir="ltr"
+                               placeholder="کد SKU محصول را وارد کنید (مثلاً 35440)"
+                               style="flex:1;padding:11px 14px;border:2px solid #cbd5e1;border-radius:10px;font-family:monospace;font-size:14px;background:#fff;box-sizing:border-box;outline:none">
+
+                        <button type="button" wire:click="searchBySku"
+                                wire:loading.attr="disabled"
+                                style="padding:11px 22px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px;min-width:110px">
+                            <span wire:loading.remove wire:target="searchBySku">⚡ جستجو</span>
+                            <span wire:loading wire:target="searchBySku">⏳...</span>
+                        </button>
+                    </div>
+
+                    @if($searchStatus)
+                        <div style="margin-top:10px;font-size:12px;font-weight:700;color:{{ str_starts_with($searchStatus, '✅') ? '#15803d' : (str_starts_with($searchStatus, '⏳') ? '#0891b2' : '#dc2626') }}">
+                            {{ $searchStatus }}
+                        </div>
+                    @endif
+
+                    @if($searchedProduct)
+                        <div style="margin-top:10px;padding:10px;background:#fff;border-radius:8px;border:1px solid #e2e8f0;display:flex;gap:10px;align-items:center">
+                            @if(!empty($searchedProduct['image']))
+                                <img src="{{ $searchedProduct['image'] }}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0">
+                            @endif
+                            <div style="flex:1;min-width:0">
+                                <div style="font-weight:700;font-size:13px;color:#1e293b">{{ $searchedProduct['name'] }}</div>
+                                <div style="font-size:11px;color:#64748b;margin-top:2px">
+                                    SKU: <span style="font-family:monospace" dir="ltr">{{ $searchedProduct['sku'] }}</span>
+                                    &nbsp;·&nbsp;
+                                    {{ number_format($searchedProduct['price']) }} تومان
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- جداکننده --}}
+                <div style="display:flex;align-items:center;gap:10px;margin:16px 0">
+                    <div style="flex:1;height:1px;background:#e2e8f0"></div>
+                    <span style="font-size:11px;color:#94a3b8;font-weight:700">یا دستی وارد کنید</span>
+                    <div style="flex:1;height:1px;background:#e2e8f0"></div>
+                </div>
+            @endif
+
+            {{-- Steps --}}
+            <div style="display:flex;justify-content:space-between;margin-bottom:24px;position:relative;padding:0 20px">
+                <div style="position:absolute;top:18px;left:60px;right:60px;height:2px;background:#e2e8f0;z-index:0"></div>
+                @foreach([1 => 'سنگ و فلز', 2 => 'مشخصات', 3 => 'تصویر'] as $num => $label)
+                    <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;flex:1">
+                        <div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;
+                            background:{{ $step >= $num ? 'linear-gradient(135deg,#1a5276,#0d3b5e)' : '#f1f5f9' }};
+                            color:{{ $step >= $num ? '#fff' : '#64748b' }};">
+                            {{ $num }}
+                        </div>
+                        <div style="font-size:11px;font-weight:700;margin-top:6px;color:{{ $step >= $num ? '#1a5276' : '#94a3b8' }}">{{ $label }}</div>
+                    </div>
+                @endforeach
+            </div>
+
+            {{-- STEP 1 --}}
             @if($step === 1)
-                <div>
-                    <h3 class="font-bold text-sm mb-3 text-base-content/70">💎 انتخاب سنگ</h3>
-                    <div class="grid grid-cols-3 md:grid-cols-4 gap-2">
+                <div style="margin-bottom:20px">
+                    <h3 style="font-size:14px;font-weight:700;color:#1a5276;margin:0 0 12px">💎 سنگ را انتخاب کنید</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px">
                         @foreach($stoneOptions as $i => $s)
-                            <button type="button"
-                                    wire:click="selectStone({{ $i }})"
-                                    class="border-2 rounded-lg p-2 text-center transition
-                                        {{ $stoneName === $s['name'] ? 'border-primary bg-primary/10' : 'border-base-300 hover:border-primary/50' }}">
-                                <div class="text-2xl mb-1">{{ $s['icon'] }}</div>
-                                <div class="text-[11px] font-bold leading-tight">{{ $s['name'] }}</div>
+                            <button type="button" wire:click="selectStone({{ $i }})"
+                                    style="padding:10px 4px;border:2px solid {{ $stoneName === $s['name'] ? '#c9a84c' : '#e2e8f0' }};background:{{ $stoneName === $s['name'] ? '#fef3c7' : '#fff' }};border-radius:10px;cursor:pointer">
+                                <div style="font-size:26px;margin-bottom:4px">{{ $s['icon'] }}</div>
+                                <div style="font-size:11px;font-weight:700;color:#1e293b">{{ $s['name'] }}</div>
                             </button>
                         @endforeach
                     </div>
+                    @error('stoneName') <div style="color:#dc2626;font-size:11px;margin-top:8px">{{ $message }}</div> @enderror
                 </div>
 
-                <div class="divider my-1"></div>
-
                 <div>
-                    <h3 class="font-bold text-sm mb-3 text-base-content/70">⚙️ انتخاب فلز</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <h3 style="font-size:14px;font-weight:700;color:#1a5276;margin:0 0 12px">⚙️ فلز را انتخاب کنید</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px">
                         @foreach($metalOptions as $i => $m)
-                            <button type="button"
-                                    wire:click="selectMetal({{ $i }})"
-                                    class="border-2 rounded-lg p-2 text-center text-xs font-bold transition
-                                        {{ $metal === $m['name'] ? 'border-primary bg-primary/10' : 'border-base-300 hover:border-primary/50' }}">
+                            <button type="button" wire:click="selectMetal({{ $i }})"
+                                    style="padding:12px 6px;border:2px solid {{ $metal === $m['name'] ? '#c9a84c' : '#e2e8f0' }};background:{{ $metal === $m['name'] ? '#fef3c7' : '#fff' }};border-radius:10px;cursor:pointer;font-weight:700;font-size:12px;color:#1e293b">
                                 {{ $m['name'] }}
                             </button>
                         @endforeach
                     </div>
+                    @error('metal') <div style="color:#dc2626;font-size:11px;margin-top:8px">{{ $message }}</div> @enderror
                 </div>
             @endif
 
-            {{-- ========== STEP 2 ========== --}}
+            {{-- STEP 2 --}}
             @if($step === 2)
-                <div class="alert alert-info py-2 text-xs">
-                    <span>💎 <strong>{{ $stoneName }}</strong> — ⚙️ <strong>{{ $metal }}</strong></span>
+                <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);padding:10px 14px;border-radius:10px;margin-bottom:16px;font-size:13px;font-weight:700;color:#78350f">
+                    💎 {{ $stoneName }} — ⚙️ {{ $metal }}
                 </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-                    <div class="form-control">
-                        <label class="label py-1"><span class="label-text text-xs font-bold">طول (mm)</span></label>
-                        <input type="number" wire:model="length" step="0.01" dir="ltr"
-                               class="input input-bordered input-sm w-full text-center" />
-                        @error('length') <span class="text-error text-[10px]">{{ $message }}</span> @enderror
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px">
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">طول (mm)</label>
+                        <input type="number" step="0.01" wire:model="length" dir="ltr"
+                               style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-family:monospace;font-size:13px;background:#f8fafc;box-sizing:border-box;text-align:center">
+                        @error('length') <div style="color:#dc2626;font-size:10px;margin-top:3px">{{ $message }}</div> @enderror
                     </div>
-                    <div class="form-control">
-                        <label class="label py-1"><span class="label-text text-xs font-bold">عرض (mm)</span></label>
-                        <input type="number" wire:model="width" step="0.01" dir="ltr"
-                               class="input input-bordered input-sm w-full text-center" />
-                        @error('width') <span class="text-error text-[10px]">{{ $message }}</span> @enderror
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">عرض (mm)</label>
+                        <input type="number" step="0.01" wire:model="width" dir="ltr"
+                               style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-family:monospace;font-size:13px;background:#f8fafc;box-sizing:border-box;text-align:center">
+                        @error('width') <div style="color:#dc2626;font-size:10px;margin-top:3px">{{ $message }}</div> @enderror
                     </div>
-                    <div class="form-control">
-                        <label class="label py-1"><span class="label-text text-xs font-bold">وزن (gr)</span></label>
-                        <input type="number" wire:model="weight" step="0.001" dir="ltr"
-                               class="input input-bordered input-sm w-full text-center" />
-                        @error('weight') <span class="text-error text-[10px]">{{ $message }}</span> @enderror
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">وزن (گرم)</label>
+                        <input type="number" step="0.001" wire:model="weight" dir="ltr"
+                               style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-family:monospace;font-size:13px;background:#f8fafc;box-sizing:border-box;text-align:center">
+                        @error('weight') <div style="color:#dc2626;font-size:10px;margin-top:3px">{{ $message }}</div> @enderror
                     </div>
-                    <div class="form-control">
-                        <label class="label py-1"><span class="label-text text-xs font-bold">عیار</span></label>
-                        <input type="text" value="{{ $metalCarat }}" readonly
-                               class="input input-bordered input-sm w-full text-center bg-base-200" />
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">عیار</label>
+                        <input type="text" value="{{ $metalCarat }}" readonly dir="ltr"
+                               style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-family:monospace;font-size:13px;background:#e2e8f0;box-sizing:border-box;text-align:center">
                     </div>
-                    <div class="form-control">
-                        <label class="label py-1"><span class="label-text text-xs font-bold">برلیان</span></label>
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">برلیان</label>
                         <input type="number" wire:model="brilliant" dir="ltr"
-                               class="input input-bordered input-sm w-full text-center" />
+                               style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-family:monospace;font-size:13px;background:#f8fafc;box-sizing:border-box;text-align:center">
                     </div>
                 </div>
             @endif
 
-            {{-- ========== STEP 3 ========== --}}
+            {{-- STEP 3 --}}
             @if($step === 3)
-                <div class="alert alert-info py-2 text-xs">
-                    <span>💎 {{ $stoneName }} — ⚙️ {{ $metal }} — 📐 {{ $length }}×{{ $width }} — ⚖️ {{ $weight }}g</span>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div class="form-control">
-                        <label class="label py-1"><span class="label-text text-xs font-bold">👤 مشتری (اختیاری)</span></label>
-                        <select wire:model="customerId" class="select select-bordered select-sm w-full">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">👤 مشتری (اختیاری)</label>
+                        <select wire:model="customerId" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;background:#f8fafc;box-sizing:border-box">
                             <option value="">— بدون مشتری —</option>
                             @foreach($customers as $c)
                                 <option value="{{ $c->id }}">{{ $c->name }} — {{ $c->phone }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="form-control">
-                        <label class="label py-1"><span class="label-text text-xs font-bold">📦 سفارش (اختیاری)</span></label>
-                        <select wire:model="orderId" class="select select-bordered select-sm w-full">
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">📦 سفارش (اختیاری)</label>
+                        <select wire:model="orderId" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;background:#f8fafc;box-sizing:border-box">
                             <option value="">— بدون سفارش —</option>
                             @foreach($orders as $o)
-                                <option value="{{ $o->id }}">#{{ $o->order_number }} — {{ $o->customer?->name }}</option>
+                                <option value="{{ $o->id }}">#{{ $o->order_number }}</option>
                             @endforeach
                         </select>
                     </div>
                 </div>
 
-                <div class="form-control">
-                    <label class="label py-1"><span class="label-text text-xs font-bold">📸 تصویر محصول</span></label>
-                    <input type="file" wire:model="image" accept="image/*"
-                           class="file-input file-input-bordered file-input-sm w-full" />
-                    @if($image)
-                        <div class="mt-2">
-                            <img src="{{ $image->temporaryUrl() }}" class="w-24 h-24 object-contain border rounded" />
+                <div>
+                    <label style="display:block;font-size:11px;font-weight:700;color:#1a5276;margin-bottom:4px">📸 تصویر محصول</label>
+
+                    {{-- اگه از سایت اومده --}}
+                    @if($productImageUrl && !$image)
+                        <div style="padding:10px;background:#f0fdf4;border:1.5px solid #16a34a;border-radius:8px;margin-bottom:8px">
+                            <div style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:6px">✅ تصویر از سایت گرفته شد</div>
+                            <img src="{{ $productImageUrl }}" style="max-width:120px;border-radius:8px;border:2px solid #c9a84c">
                         </div>
                     @endif
-                    @error('image') <span class="text-error text-[10px]">{{ $message }}</span> @enderror
+
+                    {{-- آپلود دستی --}}
+                    <input type="file" wire:model="image" accept="image/*"
+                           style="width:100%;padding:8px;border:1.5px dashed #cbd5e1;border-radius:8px;background:#f8fafc;box-sizing:border-box">
+                    <div wire:loading wire:target="image" style="font-size:11px;color:#0891b2;margin-top:4px">⏳ در حال آپلود...</div>
+
+                    @if($image)
+                        <div style="margin-top:10px">
+                            <div style="font-size:11px;font-weight:700;color:#0891b2;margin-bottom:4px">📤 تصویر آپلود شده شما</div>
+                            <img src="{{ $image->temporaryUrl() }}" style="max-width:120px;border-radius:10px;border:2px solid #c9a84c">
+                        </div>
+                    @endif
+
+                    @error('image') <div style="color:#dc2626;font-size:10px;margin-top:3px">{{ $message }}</div> @enderror
                 </div>
             @endif
+        </div>
 
-            {{-- دکمه‌ها --}}
-            <div class="flex justify-between gap-2 mt-4 pt-3 border-t">
-                <div>
-                    @if($step > 1)
-                        <button wire:click="prevStep" class="btn btn-ghost btn-sm">→ قبلی</button>
-                    @endif
-                </div>
-                <div class="flex gap-2">
-                    <a href="{{ route('certificates.index') }}" class="btn btn-ghost btn-sm">انصراف</a>
-                    @if($step < 3)
-                        <button wire:click="nextStep" class="btn btn-primary btn-sm">بعدی ←</button>
-                    @else
-                        <button wire:click="save" wire:loading.attr="disabled" class="btn btn-success btn-sm">
-                            <span wire:loading.remove wire:target="save">✅ صدور شناسنامه</span>
-                            <span wire:loading wire:target="save">⏳...</span>
-                        </button>
-                    @endif
-                </div>
+        <div style="padding:12px 18px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;gap:8px">
+            <div>
+                @if($step > 1)
+                    <button type="button" wire:click="prevStep"
+                            style="padding:9px 18px;background:#f1f5f9;color:#475569;border:1.5px solid #cbd5e1;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">→ قبل</button>
+                @endif
+            </div>
+            <div style="display:flex;gap:8px">
+                <button type="button" wire:click="closeModal"
+                        style="padding:9px 18px;background:#fff;color:#475569;border:1.5px solid #cbd5e1;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">انصراف</button>
+                @if($step < 3)
+                    <button type="button" wire:click="nextStep"
+                            style="padding:9px 22px;background:linear-gradient(135deg,#1a5276,#0d3b5e);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">بعد ←</button>
+                @else
+                    <button type="button" wire:click="save" wire:loading.attr="disabled"
+                            style="padding:9px 22px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">
+                        <span wire:loading.remove wire:target="save">✓ ذخیره</span>
+                        <span wire:loading wire:target="save">⏳...</span>
+                    </button>
+                @endif
             </div>
         </div>
     </div>
+</div>
+@endif
 </div>

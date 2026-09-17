@@ -105,12 +105,98 @@ Route::middleware('auth')->group(function () {
     });
 
     // ═══ Certificates ═══
+    // عمومی: لینک کوتاه شناسنامه
+    Route::get('/Q/{code}', function (string $code) {
+        $cert = \App\Models\Certificate::where('code', $code)->firstOrFail();
+        return redirect()->route('certificates.show', $cert);
+    })->name('cert.public');
+
     Route::prefix('certificates')->name('certificates.')->group(function () {
         Route::get('/', CertificatesIndex::class)->name('index');
         Route::get('/create', CertificatesCreate::class)->name('create');
+
+        // ★ ترتیب مهم: مسیرهای خاص قبل از wildcard
+        Route::get('/render/{certificate}', function (\App\Models\Certificate $certificate) {
+            $html = \App\Services\CertRenderer::renderHtml($certificate);
+
+            $download = request('download', '0') === '1';
+            if ($download) {
+                // صفحه با دکمه دانلود client-side
+                $html = str_replace('</body></html>', '
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+                    <script>
+                    window.addEventListener("load", function() {
+                        // ★ پاک‌سازی oklch
+                        var card = document.querySelector(".certificate");
+                        if (card) {
+                            var all = [card].concat(Array.from(card.querySelectorAll("*")));
+                            all.forEach(function(el) {
+                                try {
+                                    var cs = window.getComputedStyle(el);
+                                    ["color","backgroundColor","borderTopColor","borderRightColor","borderBottomColor","borderLeftColor","fill","stroke"].forEach(function(p) {
+                                        var v = cs[p];
+                                        if (v && v.indexOf("oklch") !== -1) {
+                                            el.style[p] = "rgb(150,150,150)";
+                                        }
+                                    });
+                                } catch(e) {}
+                            });
+
+                            setTimeout(function() {
+                                html2canvas(card, {
+                                    scale: 3,
+                                    backgroundColor: "#fffef9",
+                                    useCORS: true,
+                                    allowTaint: true,
+                                    logging: false
+                                }).then(function(canvas) {
+                                    var a = document.createElement("a");
+                                    a.download = "certificate-' . $certificate->code . '.png";
+                                    a.href = canvas.toDataURL("image/png");
+                                    a.click();
+                                    document.getElementById("dl-status").innerHTML = "✅ ذخیره شد — می‌توانید تب را ببندید";
+                                }).catch(function(e) {
+                                    document.getElementById("dl-status").innerHTML = "❌ " + e.message;
+                                });
+                            }, 1500);
+                        }
+                    });
+                    </script>
+                    <div id="dl-status" style="position:fixed;bottom:20px;left:20px;background:#16a34a;color:#fff;padding:12px 20px;border-radius:10px;font-family:Vazirmatn;font-weight:700;z-index:9999">⏳ در حال آماده‌سازی دانلود...</div>
+                </body></html>', $html);
+            }
+
+            return response($html, 200)->header('Content-Type', 'text/html; charset=UTF-8');
+        })->name('render');
+
+        Route::get('/print', function () {
+            $ids = trim((string) request('ids', ''));
+            $auto = request('auto', '0') === '1';
+            $ids_arr = array_values(array_filter(array_map('intval', explode(',', $ids))));
+            if (empty($ids_arr)) abort(404);
+
+            $certs = \App\Models\Certificate::whereIn('id', $ids_arr)->orderBy('id')->get()->all();
+            if (empty($certs)) abort(404);
+
+            $cols = count($certs) === 1 ? 1 : 3;
+            $html = \App\Services\CertRenderer::renderBatchHtml($certs, $cols);
+
+            if ($auto) {
+                $script = '<script>window.addEventListener("load",function(){setTimeout(function(){window.print()},900)})</script>';
+                $html = str_replace('</body></html>', $script . '</body></html>', $html);
+            }
+            return response($html, 200)->header('Content-Type', 'text/html; charset=UTF-8');
+        })->name('print');
+
+        // ★ جدول حرفه‌ای PowerGrid
         Route::get('/designer/{certificate?}', CertificatesDesigner::class)->name('designer');
+
+        // ★ wildcard آخر
         Route::get('/{certificate}', CertificatesShow::class)->name('show');
     });
+
+    // ═══ Bulk Products ═══
+    Route::get('/products/bulk', \App\Livewire\Products\BulkCreate::class)->name('products.bulk');
 
     // ═══ Reports ═══
     Route::get('/reports', ReportsIndex::class)->name('reports.index');

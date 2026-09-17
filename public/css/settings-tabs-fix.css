@@ -1,4 +1,4 @@
-/* Settings Tabs — FORCE FIX v2 */
+/* Settings Tabs - FORCE */
 .sg-settings-tabs {
     display: flex !important;
     flex-wrap: nowrap !important;
@@ -8,21 +8,51 @@
     margin: 0 0 14px 0 !important;
     border-bottom: 2px solid #e2e8f0 !important;
     background: transparent !important;
+    scrollbar-width: thin;
 }
+.sg-settings-tabs::-webkit-scrollbar { height: 4px; }
+.sg-settings-tabs::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+
 .sg-settings-tab {
     flex: 0 0 auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
     padding: 8px 14px !important;
     border: 1.5px solid #e2e8f0 !important;
     border-radius: 10px !important;
     background: #fff !important;
+    font-family: inherit !important;
     font-size: 12.5px !important;
     font-weight: 700 !important;
     color: #64748b !important;
     cursor: pointer !important;
     white-space: nowrap !important;
+    text-decoration: none !important;
+    transition: all .15s !important;
+}
+.sg-settings-tab:hover {
+    border-color: #c9a84c !important;
+    color: #1e293b !important;
+    transform: translateY(-1px) !important;
 }
 .sg-settings-tab.active {
     background: linear-gradient(135deg, #1a5276, #0d3b5e) !important;
     color: #fff !important;
     border-color: #1a5276 !important;
+    box-shadow: 0 4px 12px rgba(26,82,118,.25) !important;
 }
+.sg-settings-tab .badge-new {
+    background: #c9a84c !important;
+    color: #fff !important;
+    font-size: 8px !important;
+    padding: 1px 5px !important;
+    border-radius: 8px !important;
+    font-weight: 800 !important;
+}
+
+.sg-tabs-mobile, .sg-tabs-bar { display: none !important; }
+
+[data-theme="dark"] .sg-settings-tabs { border-bottom-color: #2a3544 !important; }
+[data-theme="dark"] .sg-settings-tab { background: #1c2332 !important; color: #94a3b8 !important; border-color: #2a3544 !important; }
+[data-theme="dark"] .sg-settings-tab.active { background: linear-gradient(135deg, #4da6d8, #2c7db3) !important; color: #fff !important; }
