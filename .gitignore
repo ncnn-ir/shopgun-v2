@@ -19,3 +19,8 @@ Thumbs.db
 *.log
 /bootstrap/cache/*.php
 /storage/framework/views/*.php
+fix_*.py
+add_bulk.py
+*.bak-*
+*.disabled-*
+/storage/backups
