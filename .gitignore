@@ -25,3 +25,9 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# ShopGun extra
+shopgun-v2.tar.gz
+*.tar.gz
+/bootstrap/cache/*.php
+/storage/framework/views/*.php
