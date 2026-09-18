@@ -52,6 +52,51 @@
     {{-- PowerGrid Assets --}}
     @powerGridStyles
 
+<link rel="stylesheet" href="{{ asset('css/shopgun-system.css') }}?v=1">
+<style>
+/* ═══ Mobile Overflow Fix ═══ */
+html, body {
+    max-width: 100vw;
+    overflow-x: hidden !important;
+}
+.sg-layout, .sg-main, main {
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+body * {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+.sg-table-wrap, .sg-table-container, .sg-table-scroll {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+}
+img, video, svg, canvas {
+    max-width: 100%;
+    height: auto;
+}
+@media (max-width: 768px) {
+    body { font-size: 13px; }
+    .sg-main, main { padding: 8px !important; }
+    .sg-card, .sg-settings-card {
+        padding: 10px !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    table { font-size: 11px; }
+    .form-grid { grid-template-columns: 1fr !important; }
+    .form-grid > [class*="col-"] { grid-column: span 1 !important; }
+}
+@media (max-width: 480px) {
+    body { font-size: 12px; }
+    h1 { font-size: 16px !important; }
+    h2 { font-size: 14px !important; }
+    h3 { font-size: 13px !important; }
+    .btn, button { padding: 6px 10px !important; font-size: 11px !important; }
+}
+</style>
 </head>
 <body>
 

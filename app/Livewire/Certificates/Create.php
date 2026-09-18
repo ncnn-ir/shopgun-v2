@@ -467,77 +467,81 @@ class Create extends Component
             'image'     => 'nullable|image|max:5120',
         ]);
 
-        $imagePath = null;
-        if ($this->image) {
-            try {
+        try {
+            $imagePath = null;
+            if ($this->image) {
                 $imagePath = $this->image->store('certificates', 'public');
-            } catch (\Throwable $e) {}
-        } elseif ($this->productImageUrl) {
-            try {
-                $img = Http::timeout(25)->get($this->productImageUrl)->body();
+            } elseif ($this->productImageUrl) {
+                $img = \Illuminate\Support\Facades\Http::timeout(25)->get($this->productImageUrl)->body();
                 $ext = 'jpg';
                 if (preg_match('/\.(png|jpg|jpeg|webp)/i', $this->productImageUrl, $m)) {
                     $ext = strtolower($m[1]);
                 }
                 $fname = 'certificates/' . uniqid('cert_') . '.' . $ext;
-                Storage::disk('public')->put($fname, $img);
+                \Illuminate\Support\Facades\Storage::disk('public')->put($fname, $img);
                 $imagePath = $fname;
-            } catch (\Throwable $e) {}
+            }
+
+            // ★ استفاده از Action واحد
+            $action = new \App\Application\Actions\IssueCertificateAction();
+
+            if ($this->editingId) {
+                $cert = \App\Models\Certificate::find($this->editingId);
+                if (!$cert) {
+                    $this->dispatch('notify', type: 'error', message: 'شناسنامه پیدا نشد');
+                    return;
+                }
+
+                $data = [
+                    'stone_name' => $this->stoneName,
+                    'stone_en' => $this->stoneEn,
+                    'stone_origin' => $this->stoneOrigin,
+                    'stone_flag' => $this->stoneFlag,
+                    'metal' => $this->metal,
+                    'metal_en' => $this->metalEn,
+                    'metal_carat' => $this->metalCarat,
+                    'length' => (float) ($this->length ?: 0),
+                    'width' => (float) ($this->width ?: 0),
+                    'weight' => (float) ($this->weight ?: 0),
+                    'brilliant' => (int) ($this->brilliant ?: 0),
+                    'customer_id' => $this->customerId ?: null,
+                    'order_id' => $this->orderId ?: null,
+                    'sku' => $this->searchedProduct['sku'] ?? null,
+                ];
+                if ($imagePath) $data['image_path'] = $imagePath;
+
+                $cert->update($data);
+                $msg = "شناسنامه #{$cert->code} ویرایش شد.";
+            } else {
+                $cert = $action->execute([
+                    'stone_name' => $this->stoneName,
+                    'stone_en' => $this->stoneEn,
+                    'stone_origin' => $this->stoneOrigin,
+                    'stone_flag' => $this->stoneFlag,
+                    'metal' => $this->metal,
+                    'metal_en' => $this->metalEn,
+                    'metal_carat' => $this->metalCarat,
+                    'length' => (float) ($this->length ?: 0),
+                    'width' => (float) ($this->width ?: 0),
+                    'weight' => (float) ($this->weight ?: 0),
+                    'brilliant' => (int) ($this->brilliant ?: 0),
+                    'image_path' => $imagePath,
+                    'image_url' => $this->productImageUrl,
+                    'customer_id' => $this->customerId ?: null,
+                    'order_id' => $this->orderId ?: null,
+                    'sku' => $this->searchedProduct['sku'] ?? null,
+                ]);
+                $msg = "شناسنامه #{$cert->code} صادر شد.";
+            }
+
+            session()->flash('success', $msg);
+            $this->closeModal();
+            $this->dispatch('notify', type: 'success', message: $msg);
+            $this->dispatch('cert-saved');
+
+        } catch (\Throwable $e) {
+            $this->dispatch('notify', type: 'error', message: 'خطا: ' . $e->getMessage());
         }
-
-        if ($this->editingId) {
-            $cert = Certificate::find($this->editingId);
-            if (!$cert) { $this->dispatch('notify', type: 'error', message: 'شناسنامه پیدا نشد'); return; }
-
-            $data = [
-                'stone_name'   => $this->stoneName,
-                'stone_en'     => $this->stoneEn,
-                'stone_origin' => $this->stoneOrigin,
-                'stone_flag'   => $this->stoneFlag,
-                'metal'        => $this->metal,
-                'metal_en'     => $this->metalEn,
-                'metal_carat'  => $this->metalCarat,
-                'length'       => (float) ($this->length ?: 0),
-                'width'        => (float) ($this->width ?: 0),
-                'weight'       => (float) ($this->weight ?: 0),
-                'brilliant'    => (int) ($this->brilliant ?: 0),
-                'customer_id'  => $this->customerId ?: null,
-                'order_id'     => $this->orderId ?: null,
-            ];
-            if ($imagePath) $data['image_path'] = $imagePath;
-            $cert->update($data);
-            $msg = "شناسنامه #{$cert->code} ویرایش شد.";
-        } else {
-            $code = Certificate::generateCode();
-            $serial = Certificate::generateSerial($code, $this->stoneEn ?: $this->stoneName);
-
-            Certificate::create([
-                'code'         => $code,
-                'serial'       => $serial,
-                'sku'          => $this->searchedProduct['sku'] ?? null,
-                'stone_name'   => $this->stoneName,
-                'stone_en'     => $this->stoneEn,
-                'stone_origin' => $this->stoneOrigin,
-                'stone_flag'   => $this->stoneFlag,
-                'metal'        => $this->metal,
-                'metal_en'     => $this->metalEn,
-                'metal_carat'  => $this->metalCarat,
-                'length'       => (float) ($this->length ?: 0),
-                'width'        => (float) ($this->width ?: 0),
-                'weight'       => (float) ($this->weight ?: 0),
-                'brilliant'    => (int) ($this->brilliant ?: 0),
-                'image_path'   => $imagePath,
-                'customer_id'  => $this->customerId ?: null,
-                'order_id'     => $this->orderId ?: null,
-                'issued_at'    => now(),
-            ]);
-            $msg = "شناسنامه #{$code} صادر شد.";
-        }
-
-        session()->flash('success', $msg);
-        $this->closeModal();
-        $this->dispatch('notify', type: 'success', message: $msg);
-        $this->dispatch('cert-saved');
     }
 
     public function render()

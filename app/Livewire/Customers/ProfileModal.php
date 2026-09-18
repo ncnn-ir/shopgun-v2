@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Livewire\Customers;
 
 use App\Models\Customer;
@@ -13,13 +14,14 @@ class ProfileModal extends Component
     public array $orders = [];
 
     #[On('open-customer-profile')]
-    public function open(?string $phone = null, ?int $customerId = null): void
+    public function open($customerId = null, $phone = null): void
     {
         $customer = null;
-        if ($customerId) {
-            $customer = Customer::find($customerId);
+
+        if (is_numeric($customerId)) {
+            $customer = Customer::find((int) $customerId);
         } elseif ($phone) {
-            $np = preg_replace('/\D/', '', $phone);
+            $np = preg_replace('/\D/', '', (string) $phone);
             $customer = Customer::where('phone', 'like', "%{$np}%")->first();
         }
 
@@ -29,7 +31,7 @@ class ProfileModal extends Component
         }
 
         $this->customer = $customer;
-        $orders = $customer->orders()->latest()->get();
+        $orders = $customer->orders()->with('items')->latest()->get();
 
         $this->stats = [
             'total' => $orders->count(),
@@ -39,19 +41,24 @@ class ProfileModal extends Component
             'last' => $orders->first()?->created_at,
         ];
 
-        $this->orders = $orders->take(10)->map(fn($o) => [
+        $this->orders = $orders->take(15)->map(fn($o) => [
             'id' => $o->id,
             'num' => $o->order_number,
             'amount' => (float) $o->amount,
             'status' => $o->status,
             'date' => \App\Support\PersianDate::format($o->created_at, 'Y/m/d'),
-            'products' => $o->items->pluck('title')->take(2)->implode('، '),
+            'products' => $o->items->pluck('title')->take(3)->implode('، '),
+            'items_count' => $o->items->count(),
         ])->toArray();
 
         $this->show = true;
     }
 
-    public function close(): void { $this->show = false; $this->customer = null; }
+    public function close(): void
+    {
+        $this->show = false;
+        $this->customer = null;
+    }
 
     public function viewOrder(int $orderId): void
     {
@@ -59,5 +66,23 @@ class ProfileModal extends Component
         $this->dispatch('open-order-view', orderId: $orderId);
     }
 
-    public function render() { return view('livewire.customers.profile-modal'); }
+    public function newOrder(): void
+    {
+        if (!$this->customer) return;
+        $phone = $this->customer->phone;
+        $this->close();
+        $this->dispatch('open-order-form');
+        // اطلاعات مشتری auto fill by phone
+    }
+
+    public function callCustomer(): void
+    {
+        if (!$this->customer) return;
+        $this->dispatch('open-call', phone: $this->customer->phone);
+    }
+
+    public function render()
+    {
+        return view('livewire.customers.profile-modal');
+    }
 }

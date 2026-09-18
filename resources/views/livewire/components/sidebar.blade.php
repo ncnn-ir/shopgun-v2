@@ -69,6 +69,7 @@
                     ['route' => 'orders.index',       'icon' => '📦', 'label' => 'سفارشات',   'badge' => $stats['orders_pending'] ?? 0],
                     ['route' => 'customers.index',    'icon' => '👥', 'label' => 'مشتریان'],
                     ['route' => 'certificates.index', 'icon' => '💎', 'label' => 'شناسنامه'],
+        ['route' => 'products.bulk', 'icon' => '📦', 'label' => 'ثبت گروهی محصولات'],
                     ['route' => 'reports.index',      'icon' => '📊', 'label' => 'گزارش‌ها'],
                     ['route' => 'activity-log',       'icon' => '📜', 'label' => 'لاگ'],
                     ['route' => 'settings.index',     'icon' => '⚙️', 'label' => 'تنظیمات'],

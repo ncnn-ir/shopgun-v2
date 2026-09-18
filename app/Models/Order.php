@@ -17,6 +17,8 @@ class Order extends Model
         'order_number', 'customer_id', 'channel_id', 'status',
         'amount', 'insurance', 'address', 'postal_code', 'phone',
         'notes', 'invoice_needed', 'meta',
+        'payment_method', 'payment_title', 'sales_channel',
+        'channel_metadata', 'customer_note', 'supply_status', 'woo_status',
         'tracking_code', 'carrier', 'shipping_status', 'shipping_events',
         'shipped_at', 'delivered_at',
     ];
@@ -27,6 +29,7 @@ class Order extends Model
         'invoice_needed'  => 'boolean',
         'meta'            => 'array',
         'shipping_events' => 'array',
+        'channel_metadata' => 'array',
         'shipped_at'      => 'datetime',
         'delivered_at'    => 'datetime',
     ];
@@ -110,6 +113,50 @@ class Order extends Model
     /* ═══════════════════════════════════════════════════════════
        تولید شماره سفارش یکتا
        ═══════════════════════════════════════════════════════════ */
+    public function getSalesChannelLabelAttribute(): string
+    {
+        return match ($this->sales_channel) {
+            'basalam' => '🛍️ باسلام',
+            'terb' => '🏬 ترب',
+            'zibal' => '💳 زیبال',
+            'zarinpal' => '💳 زرین‌پال',
+            'bank' => '🏦 کارت به کارت',
+            'cod' => '💵 پرداخت در محل',
+            'website' => '🌐 سایت',
+            'instagram' => '📷 اینستاگرام',
+            'telegram' => '✈️ تلگرام',
+            'phone' => '📞 تلفنی',
+            default => '🌐 ' . ($this->sales_channel ?? 'نامشخص'),
+        };
+    }
+
+    public function getSalesChannelColorAttribute(): string
+    {
+        return match ($this->sales_channel) {
+            'basalam' => '#00b894',
+            'terb' => '#f59e0b',
+            'zibal' => '#3b82f6',
+            'zarinpal' => '#8b5cf6',
+            'bank' => '#64748b',
+            'cod' => '#10b981',
+            'website' => '#6b0f1a',
+            'instagram' => '#e91e63',
+            'telegram' => '#29b6f6',
+            'phone' => '#66bb6a',
+            default => '#94a3b8',
+        };
+    }
+
+    public function getSupplyStatusLabelAttribute(): string
+    {
+        return match ($this->supply_status) {
+            'awaiting_supply' => '⏳ در انتظار تامین',
+            'supplied' => '✅ تامین شد',
+            'delivered_to_shipping' => '📦 تحویل واحد ارسال',
+            default => '—',
+        };
+    }
+
     public static function generateNumber(): string
     {
         $last = static::orderByDesc('id')->value('order_number');

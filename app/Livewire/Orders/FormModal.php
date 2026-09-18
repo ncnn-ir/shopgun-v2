@@ -526,69 +526,84 @@ class FormModal extends Component
             'items.*.title' => 'required|string|max:255',
         ]);
 
-        $normalized = preg_replace('/\D/', '', $this->phone);
-        $normalizedNoZero = ltrim($normalized, '0');
+        try {
+            $action = new \App\Application\Actions\CreateOrderAction();
 
-        $customer = $this->customerId ? Customer::find($this->customerId) : null;
-        if (!$customer) {
-            $customer = Customer::where('phone', $normalized)
-                ->orWhere('phone', $normalizedNoZero)
-                ->orWhere('phone', '0' . $normalizedNoZero)
-                ->first();
+            if ($this->orderId) {
+                // ویرایش سفارش — بدون Action (پیچیدگی کمتر)
+                $order = \App\Models\Order::find($this->orderId);
+                if (!$order) {
+                    $this->dispatch('notify', type: 'error', message: 'سفارش پیدا نشد');
+                    return;
+                }
+                $order->items()->delete();
+
+                $amount = 0;
+                foreach ($this->items as $it) {
+                    $amount += ((float) ($it['price'] ?? 0)) * ((int) ($it['quantity'] ?? 1));
+                }
+
+                $order->update([
+                    'customer_name' => $this->customerName,
+                    'phone' => $this->phone,
+                    'address' => $this->address,
+                    'postal_code' => $this->postalCode,
+                    'status' => $this->status,
+                    'channel_id' => $this->channelId,
+                    'insurance' => (float) $this->insurance,
+                    'discount' => (float) $this->discount,
+                    'shipping' => (float) $this->shipping,
+                    'amount' => $amount,
+                    'notes' => $this->notes,
+                ]);
+
+                foreach ($this->items as $idx => $it) {
+                    $order->items()->create([
+                        'sku' => $it['sku'] ?? null,
+                        'title' => $it['title'],
+                        'price' => (float) $it['price'],
+                        'quantity' => (int) $it['quantity'],
+                        'cert_needed' => !empty($it['certificate_needed']),
+                        'sort_order' => $idx,
+                    ]);
+                }
+
+                $msg = 'ویرایش شد ✅';
+                $orderId = $order->id;
+            } else {
+                // ★ استفاده از Action واحد
+                $order = $action->execute([
+                    'phone' => $this->phone,
+                    'name' => $this->customerName,
+                    'address' => $this->address,
+                    'postal_code' => $this->postalCode,
+                    'channel_id' => $this->channelId,
+                    'status' => $this->status,
+                    'insurance' => (float) $this->insurance,
+                    'discount' => (float) $this->discount,
+                    'shipping' => (float) $this->shipping,
+                    'notes' => $this->notes,
+                    'invoice_needed' => false,
+                    'items' => array_map(fn($it) => [
+                        'sku' => $it['sku'] ?? null,
+                        'title' => $it['title'],
+                        'price' => (float) $it['price'],
+                        'quantity' => (int) $it['quantity'],
+                        'cert_needed' => !empty($it['certificate_needed']),
+                    ], $this->items),
+                ]);
+
+                $msg = 'ثبت شد ✅';
+                $orderId = $order->id;
+            }
+
+            $this->dispatch('order-saved', orderId: $orderId);
+            $this->dispatch('notify', type: 'success', message: $msg);
+            $this->close();
+
+        } catch (\Throwable $e) {
+            $this->dispatch('notify', type: 'error', message: 'خطا: ' . $e->getMessage());
         }
-        if (!$customer) {
-            $customer = Customer::create([
-                'name' => $this->customerName,
-                'phone' => $normalized ?: $normalizedNoZero,
-                'address' => $this->address,
-                'postal_code' => $this->postalCode,
-            ]);
-        } else {
-            $customer->update([
-                'name' => $this->customerName,
-                'address' => $this->address,
-                'postal_code' => $this->postalCode,
-            ]);
-        }
-
-        $data = [
-            'customer_id' => $customer->id,
-            'customer_name' => $this->customerName,
-            'phone' => $this->phone,
-            'address' => $this->address,
-            'postal_code' => $this->postalCode,
-            'status' => $this->status,
-            'channel_id' => $this->channelId,
-            'insurance' => (float)$this->insurance,
-            'discount' => (float)$this->discount,
-            'shipping' => (float)$this->shipping,
-            'amount' => $this->total,
-            'notes' => $this->notes,
-        ];
-
-        if ($this->orderId) {
-            $order = Order::find($this->orderId);
-            $order->update($data);
-            $order->items()->delete();
-        } else {
-            $data['order_number'] = Order::generateNumber();
-            $order = Order::create($data);
-        }
-
-        foreach ($this->items as $it) {
-            $order->items()->create([
-                'product_id' => null,
-                'sku' => $it['sku'] ?? null,
-                'title' => $it['title'],
-                'price' => (float)$it['price'],
-                'quantity' => (int)$it['quantity'],
-                'cert_needed' => !empty($it['certificate_needed']),
-            ]);
-        }
-
-        $this->dispatch('order-saved', orderId: $order->id);
-        $this->dispatch('notify', type: 'success', message: $this->orderId ? 'ویرایش شد' : 'ثبت شد');
-        $this->close();
     }
 
     public function render()

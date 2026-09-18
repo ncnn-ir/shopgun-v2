@@ -197,6 +197,7 @@ Route::middleware('auth')->group(function () {
 
     // ═══ Bulk Products ═══
     Route::get('/products/bulk', \App\Livewire\Products\BulkCreate::class)->name('products.bulk');
+    Route::get('/products/bulk/run/{run}', \App\Livewire\Products\BulkRunDetail::class)->name('products.bulk.run');
 
     // ═══ Reports ═══
     Route::get('/reports', ReportsIndex::class)->name('reports.index');
@@ -244,9 +245,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/stones', SettingsStones::class)->name('stones');
         Route::get('/metals', SettingsMetals::class)->name('metals');
         Route::get('/health', \App\Livewire\Settings\Health::class)->name('health');
+        Route::get('/sync', \App\Livewire\Settings\SyncDashboard::class)->name('sync');
         Route::get('/labels', \App\Livewire\Settings\Labels::class)->name('labels');
         Route::get('/channels', \App\Livewire\Settings\Channels::class)->name('channels');
         Route::get('/health', \App\Livewire\Settings\Health::class)->name('health');
+        Route::get('/sync', \App\Livewire\Settings\SyncDashboard::class)->name('sync');
         Route::get('/labels', \App\Livewire\Settings\Labels::class)->name('labels');
         Route::get('/channels', \App\Livewire\Settings\Channels::class)->name('channels');
         Route::get('/channels', SettingsChannels::class)->name('channels');

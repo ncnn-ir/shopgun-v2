@@ -1692,3 +1692,71 @@ select.form-control option {
     .sg-slider > label { font-size: 11px; }
     .cert-preview-stage .certificate { transform: scale(1); }
 }
+
+
+/* ═══════════════════════════════════════════════════════════
+   ShopGun Anti-Overflow v8
+   ═══════════════════════════════════════════════════════════ */
+
+/* جلوگیری از بیرون زدن محتوا */
+.sg-layout, .sg-main, main, .sg-content-area {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box;
+}
+
+.sg-card, .sg-settings-card, .sg-table-container,
+.sg-settings-tabs, .cert-2col, .sg-stats-row {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* اسکرول عمودی برای لیست‌ها */
+.sg-scroll-y {
+    max-height: 210px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+}
+.sg-scroll-y::-webkit-scrollbar { width: 5px; }
+.sg-scroll-y::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,.15);
+    border-radius: 3px;
+}
+
+/* Grid ریسپانسیو */
+@media (max-width: 900px) {
+    .sg-stats-row { gap: 6px; }
+    .sg-stat-card { min-width: 130px; padding: 10px; }
+}
+
+@media (max-width: 768px) {
+    /* غیرفعال کردن grid ایستا در موبایل */
+    [style*="grid-template-columns: 2fr 1fr"],
+    [style*="grid-template-columns: 1fr 1fr"],
+    [style*="grid-template-columns: repeat(4"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* مطمئن شو جداول اسکرول دارن */
+    .sg-table-container { overflow-x: auto; }
+
+    /* هدر و فوتر */
+    .sg-main-header { padding: 8px 10px; }
+    .sg-header-title h1 { font-size: 14px; }
+    .sg-header-title p { font-size: 9px; }
+    .sg-header-date { font-size: 10px; padding: 4px 8px; }
+    .sg-header-icon-btn { width: 28px; height: 28px; font-size: 12px; }
+
+    /* تب‌ها */
+    .sg-settings-tabs { padding: 6px 8px; }
+    .sg-settings-tab { padding: 6px 10px; font-size: 11px; }
+}
+
+@media (max-width: 480px) {
+    .sg-header-right { gap: 6px; }
+    .sg-logo-container { width: 34px; height: 34px; font-size: 14px; }
+    .sg-header-actions { gap: 4px; }
+    .sg-header-icon-btn { width: 26px; height: 26px; font-size: 11px; }
+}

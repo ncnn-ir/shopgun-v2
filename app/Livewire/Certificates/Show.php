@@ -28,6 +28,42 @@ class Show extends Component
         return redirect()->route('certificates.index');
     }
 
+    public array $snapshots = [];
+    public bool $showHistory = false;
+
+    public function loadHistory(): void
+    {
+        try {
+            $this->snapshots = \App\Application\Certificates\CertificateSnapshotService::history($this->certificate)
+                ->map(fn($s) => [
+                    'id' => $s->id,
+                    'event' => $s->event,
+                    'event_label' => match($s->event) {
+                        'issued' => '📝 صدور اولیه',
+                        'updated' => '✏️ ویرایش',
+                        'reprinted' => '🖨️ چاپ مجدد',
+                        'design_changed' => '🎨 تغییر طرح',
+                        default => $s->event,
+                    },
+                    'stone_name' => $s->stone_name,
+                    'metal' => $s->metal,
+                    'weight' => $s->weight,
+                    'captured_at' => \App\Support\PersianDate::format($s->captured_at, 'Y/m/d H:i'),
+                    'changed_by' => $s->changed_by_name,
+                ])
+                ->toArray();
+            $this->showHistory = true;
+        } catch (\Throwable $e) {
+            $this->dispatch('notify', type: 'error', message: $e->getMessage());
+        }
+    }
+
+    public function closeHistory(): void
+    {
+        $this->showHistory = false;
+        $this->snapshots = [];
+    }
+
     public function render()
     {
         return view('livewire.certificates.show', [
