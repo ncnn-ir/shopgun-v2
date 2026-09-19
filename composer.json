@@ -18,8 +18,7 @@
         "spatie/laravel-backup": "^10.3",
         "spatie/laravel-medialibrary": "^11.23",
         "spatie/laravel-permission": "^8.3",
-        "tightenco/ziggy": "^2.6",
-        "tivents/livewire-form-builder": "^1.0"
+        "tightenco/ziggy": "^2.6"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^4.4",

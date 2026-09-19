@@ -28,3 +28,14 @@ fix_*.py
 add_bulk.py
 *.bak-*
 /storage/backups
+
+# ═══ Cleanup Windows ═══
+*.bak.*
+*.bak-*
+*.py
+*.disabled-*
+*.disabled
+/textarea
+/-
+/[
+/DIAGNOSTIC*.txt

@@ -1,0 +1,699 @@
+/* ═══ ShopGun Channel System CSS ═══ */
+
+/* ─── Channel Badge ─── */
+.ch-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.6;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    vertical-align: middle;
+}
+.ch-badge .ch-icon { font-size: 12px; }
+
+/* رنگ‌ها */
+.ch-basalam    { background:#d1fae5; color:#065f46; border-color:#6ee7b7; }
+.ch-digikala   { background:#fee2e2; color:#991b1b; border-color:#fca5a5; }
+.ch-torob      { background:#ffedd5; color:#9a3412; border-color:#fdba74; }
+.ch-divar      { background:#f3e8ff; color:#6b21a8; border-color:#d8b4fe; }
+.ch-sheypoor   { background:#fae8ff; color:#86198f; border-color:#f0abfc; }
+.ch-bamilo     { background:#fef9c3; color:#854d0e; border-color:#fde047; }
+.ch-instagram  { background:#fce7f3; color:#9d174d; border-color:#f9a8d4; }
+.ch-telegram   { background:#e0f2fe; color:#075985; border-color:#7dd3fc; }
+.ch-whatsapp   { background:#dcfce7; color:#166534; border-color:#86efac; }
+.ch-eitaa      { background:#fef3c7; color:#92400e; border-color:#fcd34d; }
+.ch-zibal      { background:#e0e7ff; color:#3730a3; border-color:#a5b4fc; }
+.ch-sadad      { background:#dbeafe; color:#1e40af; border-color:#93c5fd; }
+.ch-zarinpal   { background:#fef3c7; color:#92400e; border-color:#fbbf24; }
+.ch-asanpardakht { background:#cffafe; color:#155e75; border-color:#67e8f9; }
+.ch-idpay      { background:#ccfbf1; color:#115e59; border-color:#5eead4; }
+.ch-nextpay    { background:#f1f5f9; color:#334155; border-color:#cbd5e1; }
+.ch-payir      { background:#dbeafe; color:#1e40af; border-color:#93c5fd; }
+.ch-mellat     { background:#fee2e2; color:#991b1b; border-color:#fca5a5; }
+.ch-saman      { background:#dcfce7; color:#166534; border-color:#86efac; }
+.ch-parsian    { background:#ffedd5; color:#9a3412; border-color:#fdba74; }
+.ch-pasargad   { background:#dbeafe; color:#1e40af; border-color:#93c5fd; }
+.ch-website    { background:#e0e7ff; color:#3730a3; border-color:#a5b4fc; }
+.ch-woocommerce { background:#ede9fe; color:#5b21b6; border-color:#c4b5fd; }
+.ch-phone      { background:#cffafe; color:#155e75; border-color:#67e8f9; }
+.ch-in_person  { background:#fef3c7; color:#92400e; border-color:#fcd34d; }
+.ch-pos        { background:#f1f5f9; color:#334155; border-color:#cbd5e1; }
+.ch-online     { background:#dbeafe; color:#1e40af; border-color:#93c5fd; }
+.ch-unknown    { background:#f3f4f6; color:#4b5563; border-color:#d1d5db; }
+
+/* حالت تاریک */
+.dark .ch-badge { filter: brightness(0.85) saturate(0.9); }
+
+/* ─── Channel Select (در جدول) ─── */
+.ch-select {
+    padding: 3px 24px 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid #d1d5db;
+    background-color: #fff;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236b7280'><path d='M5.516 7.548c.436-.446 1.043-.481 1.576 0L10 10.405l2.908-2.857c.533-.481 1.141-.446 1.576 0 .436.445.408 1.197 0 1.615l-3.734 3.666c-.533.481-1.307.481-1.84 0L5.516 9.163c-.407-.418-.436-1.17 0-1.615z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: left 6px center;
+    background-size: 12px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.15s;
+    max-width: 130px;
+}
+.ch-select:hover { border-color: #9ca3af; }
+.ch-select:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.15); }
+.dark .ch-select {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #e5e7eb;
+}
+
+/* ─── Supply Modal ─── */
+.sg-modal-backdrop {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    animation: sgFadeIn 0.15s ease-out;
+}
+@keyframes sgFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sgSlideUp { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+.sg-modal {
+    position: relative;
+    background: #fff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 1100px;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);
+    animation: sgSlideUp 0.2s ease-out;
+    direction: rtl;
+}
+.dark .sg-modal { background: #111827; color: #e5e7eb; }
+
+.sg-modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    background: linear-gradient(90deg, #f9fafb, #fff);
+}
+.dark .sg-modal-header { background: #1f2937; border-color: #374151; }
+
+.sg-modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dark .sg-modal-title { color: #f9fafb; }
+.sg-modal-subtitle {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 2px;
+    font-weight: 400;
+}
+.sg-modal-close {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    font-size: 18px;
+    transition: all 0.15s;
+}
+.sg-modal-close:hover { background: #f3f4f6; color: #111827; }
+.dark .sg-modal-close:hover { background: #374151; color: #f9fafb; }
+
+.sg-modal-body {
+    padding: 16px 20px 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* تب‌های آمار */
+.sg-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.sg-tab {
+    padding: 12px;
+    border-radius: 12px;
+    border: 2px solid #e5e7eb;
+    background: #fff;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    color: inherit;
+}
+.dark .sg-tab { background: #1f2937; border-color: #374151; color: #e5e7eb; }
+.sg-tab:hover { border-color: #9ca3af; transform: translateY(-1px); }
+.sg-tab-num { font-size: 22px; font-weight: 700; line-height: 1.2; }
+.sg-tab-lbl { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+.sg-tab.active-pending  { background: #f59e0b; border-color: #d97706; color: #fff; }
+.sg-tab.active-found    { background: #3b82f6; border-color: #2563eb; color: #fff; }
+.sg-tab.active-delivered { background: #10b981; border-color: #059669; color: #fff; }
+
+.sg-search {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    font-size: 13px;
+    font-family: inherit;
+    margin-bottom: 12px;
+    outline: none;
+    transition: all 0.15s;
+}
+.sg-search:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.15); }
+.dark .sg-search { background: #1f2937; border-color: #374151; color: #e5e7eb; }
+
+.sg-bulkbar {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #eef2ff;
+    border: 1px solid #a5b4fc;
+    margin-bottom: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    font-size: 12px;
+}
+.dark .sg-bulkbar { background: rgba(99,102,241,.15); border-color: #4f46e5; }
+
+.sg-btn {
+    padding: 5px 12px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+.sg-btn:hover { transform: translateY(-1px); }
+.sg-btn:active { transform: translateY(0); }
+.sg-btn-blue   { background: #2563eb; color: #fff; }
+.sg-btn-blue:hover { background: #1d4ed8; }
+.sg-btn-green  { background: #059669; color: #fff; }
+.sg-btn-green:hover { background: #047857; }
+.sg-btn-gray   { background: #e5e7eb; color: #374151; }
+.dark .sg-btn-gray { background: #374151; color: #e5e7eb; }
+.sg-btn-indigo { background: #eef2ff; color: #4338ca; }
+.dark .sg-btn-indigo { background: rgba(99,102,241,.2); color: #c7d2fe; }
+
+.sg-table-wrap {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+}
+.dark .sg-table-wrap { border-color: #374151; }
+
+.sg-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.sg-table thead {
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+.dark .sg-table thead { background: #1f2937; border-color: #374151; }
+.sg-table th {
+    padding: 9px 10px;
+    text-align: right;
+    font-weight: 600;
+    color: #4b5563;
+    font-size: 11px;
+    white-space: nowrap;
+}
+.dark .sg-table th { color: #9ca3af; }
+.sg-table td {
+    padding: 9px 10px;
+    border-top: 1px solid #f3f4f6;
+    vertical-align: middle;
+}
+.dark .sg-table td { border-color: #374151; }
+.sg-table tbody tr:hover { background: #f9fafb; }
+.dark .sg-table tbody tr:hover { background: #1f2937; }
+
+.sg-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+/* ─── دکمه Supply Button (بالای جدول) ─── */
+.sg-supply-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(245,158,11,.3);
+    transition: all 0.15s;
+    font-family: inherit;
+}
+.sg-supply-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245,158,11,.4);
+}
+.sg-supply-btn:active { transform: translateY(0); }
+.sg-supply-count {
+    background: rgba(255,255,255,.3);
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+    .sg-modal { max-height: 96vh; border-radius: 12px; }
+    .sg-modal-body { padding: 12px; }
+    .sg-tabs { gap: 6px; }
+    .sg-tab { padding: 8px; }
+    .sg-tab-num { font-size: 18px; }
+    .sg-table { font-size: 11px; }
+    .sg-table th, .sg-table td { padding: 6px; }
+}
+
+
+
+/* ═══ Supply Modal — Card Layout ═══ */
+.sg-supply-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+}
+.sg-supply-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    background: #fff;
+    transition: all .15s;
+}
+.sg-supply-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+.dark .sg-supply-card { background: #111827; border-color: #374151; }
+
+.sg-supply-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 8px;
+}
+.dark .sg-supply-card-head { border-color: #374151; }
+.sg-supply-card-head-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.sg-supply-order-num {
+    font-family: monospace;
+    font-weight: 700;
+    color: #4f46e5;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12.5px;
+    padding: 0;
+    text-decoration: none;
+}
+.sg-supply-order-num:hover { text-decoration: underline; }
+.sg-supply-status {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 600;
+    border: 1px solid;
+}
+.sg-supply-card-date {
+    font-family: monospace;
+    font-size: 10.5px;
+    color: #94a3b8;
+}
+
+.sg-supply-customer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #475569;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+.dark .sg-supply-customer { color: #cbd5e1; }
+
+/* ─── کارت محصول ─── */
+.sg-supply-products {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+.sg-supply-product {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #f1f5f9;
+}
+.dark .sg-supply-product { background: #1f2937; border-color: #374151; }
+
+.sg-supply-product-img {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.dark .sg-supply-product-img { background: #111827; border-color: #374151; }
+.sg-supply-product-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sg-supply-product-info {
+    flex: 1;
+    min-width: 0;
+}
+.sg-supply-product-title {
+    font-weight: 600;
+    font-size: 12.5px;
+    color: #1e293b;
+    margin-bottom: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.dark .sg-supply-product-title { color: #f1f5f9; }
+.sg-supply-product-qty {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-size: 10px;
+    margin-right: 4px;
+}
+.sg-supply-product-sku {
+    font-family: monospace;
+    font-size: 10px;
+    color: #94a3b8;
+    margin-bottom: 3px;
+}
+.sg-supply-product-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 11px;
+}
+.sg-supply-price {
+    color: #059669;
+    font-weight: 700;
+    font-family: monospace;
+}
+.sg-supply-price-upd {
+    color: #94a3b8;
+    font-size: 10.5px;
+}
+
+.sg-supply-view-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: #eef2ff;
+    color: #4338ca;
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all .15s;
+    border: 1px solid #c7d2fe;
+    flex-shrink: 0;
+}
+.sg-supply-view-btn:hover {
+    background: #e0e7ff;
+    transform: translateY(-1px);
+}
+.dark .sg-supply-view-btn {
+    background: rgba(99,102,241,.15);
+    color: #c7d2fe;
+    border-color: #4f46e5;
+}
+
+/* ─── اکشن‌های کارت ─── */
+.sg-supply-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 8px;
+    border-top: 1px solid #f1f5f9;
+}
+.dark .sg-supply-card-actions { border-color: #374151; }
+.sg-supply-done {
+    font-size: 11.5px;
+    color: #059669;
+    font-weight: 600;
+    padding: 5px 0;
+}
+
+/* ─── موبایل ─── */
+@media (max-width: 640px) {
+    .sg-supply-card { padding: 10px; }
+    .sg-supply-card-head { gap: 6px; }
+    .sg-supply-card-head-right { width: 100%; }
+    .sg-supply-card-date { font-size: 10px; }
+    .sg-supply-product { gap: 8px; padding: 6px; }
+    .sg-supply-product-img { width: 48px; height: 48px; }
+    .sg-supply-product-title { font-size: 11.5px; }
+    .sg-supply-product-meta { font-size: 10px; gap: 6px; }
+    .sg-supply-view-btn { padding: 5px 8px; font-size: 10px; }
+}
+
+
+
+/* ═══ Product Quick View Modal ═══ */
+.sg-product-modal { max-width: 680px !important; }
+.sg-product-detail {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 18px;
+}
+.sg-product-detail-img {
+    width: 100%;
+    aspect-ratio: 1;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.sg-product-detail-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+.sg-product-no-img {
+    font-size: 64px;
+    opacity: 0.3;
+}
+.dark .sg-product-detail-img {
+    background: #1f2937;
+    border-color: #374151;
+}
+.sg-product-detail-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.sg-product-detail-name {
+    font-size: 16px;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1.5;
+    margin-bottom: 6px;
+}
+.dark .sg-product-detail-name { color: #f1f5f9; }
+
+.sg-product-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+}
+.sg-product-detail-row .sg-k {
+    color: #64748b;
+    min-width: 110px;
+    font-weight: 600;
+}
+.sg-product-detail-row .sg-v {
+    color: #1e293b;
+    flex: 1;
+}
+.dark .sg-product-detail-row .sg-v { color: #e5e7eb; }
+.sg-product-detail-row .mono {
+    font-family: monospace;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+}
+.dark .sg-product-detail-row .mono { background: #374151; }
+.sg-product-detail-row .sg-price {
+    color: #059669;
+    font-weight: 700;
+    font-family: monospace;
+}
+
+.sg-product-detail-desc {
+    padding: 10px;
+    background: #f8fafc;
+    border-radius: 8px;
+    font-size: 11.5px;
+    color: #475569;
+    line-height: 1.8;
+    margin-top: 4px;
+}
+.dark .sg-product-detail-desc { background: #1f2937; color: #cbd5e1; }
+
+.sg-product-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+    margin-top: 8px;
+}
+.dark .sg-product-detail-actions { border-color: #374151; }
+
+@media (max-width: 640px) {
+    .sg-product-detail {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .sg-product-detail-img {
+        max-width: 200px;
+        margin: 0 auto;
+    }
+}
+
+
+
+/* ═══ Supply Filters ═══ */
+.sg-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+.sg-search-inline {
+    flex: 1;
+    min-width: 180px;
+    margin-bottom: 0 !important;
+}
+.sg-select {
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    font-family: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+    outline: none;
+    min-width: 160px;
+    transition: all .15s;
+}
+.sg-select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+}
+.dark .sg-select {
+    background: #1f2937;
+    border-color: #374151;
+    color: #e5e7eb;
+}
+
+
+/* ═══ Modal Z-Index Fix v5 ═══ */
+.sg-modal-backdrop,
+.sg-modal-backdrop
+.sg-modal {
+    z-index: 2147483601 !important;
+}
+/* اطمینان از اینکه header/tabs سراغ مودال نمی‌رن */
+header, .sg-main-header, .sg-tabs-bar, .sg-mobile-bar, .sg-layout {
+    z-index: 100 !important;
+}
+
+
+/* ═══ Modal z-index FINAL ═══ */
+
+.sg-modal-backdrop { z-index: 99990; }
+
+/* اطمینان از روی همه چیز */
+header, .sg-main-header, .sg-tabs-bar, .sg-mobile-bar { z-index: 100 !important; }
+
+
+/* ═══ ViewModal — Extra polish ═══ */
+@media (max-width: 640px) {
+  /* روی موبایل: timeline محدود بشه */
+  .sg-modal-backdrop > div > div[style*="padding:20px 22px"] > div:first-child > div > div {
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+}

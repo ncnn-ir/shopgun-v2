@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\Order;
 use App\Observers\OrderObserver;
+use App\Observers\CertificateObserver;
+use App\Models\Certificate;
 use App\Support\PersianNumber;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
@@ -32,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Order::observe(OrderObserver::class);
+        Certificate::observe(CertificateObserver::class);
 
         // @faNum($value) — نمایش عدد با اعداد فارسی
         Blade::directive('faNum', function ($expression) {

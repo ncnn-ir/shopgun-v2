@@ -1,71 +1,209 @@
-<div style="padding:0 18px 18px">
-    <h1 style="font-size:20px;font-weight:700;margin-bottom:14px">🏠 داشبورد</h1>
+<div dir="rtl" class="sg-dash-wrap">
 
-    {{-- KPI Cards --}}
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px">
-        <div class="sg-settings-card" style="text-align:center;padding:14px 10px">
-            <div style="font-size:26px">📦</div>
-            <div style="font-size:22px;font-weight:800;color:var(--primary);margin-top:4px">{{ \App\Support\PersianNumber::toFa($stats['orders']) }}</div>
-            <div style="font-size:11px;opacity:.6;margin-top:2px">کل سفارشات</div>
-        </div>
-        <div class="sg-settings-card" style="text-align:center;padding:14px 10px">
-            <div style="font-size:26px">🆕</div>
-            <div style="font-size:22px;font-weight:800;color:var(--success);margin-top:4px">{{ \App\Support\PersianNumber::toFa($stats['orders_today']) }}</div>
-            <div style="font-size:11px;opacity:.6;margin-top:2px">امروز</div>
-        </div>
-        <div class="sg-settings-card" style="text-align:center;padding:14px 10px">
-            <div style="font-size:26px">⏳</div>
-            <div style="font-size:22px;font-weight:800;color:var(--warn);margin-top:4px">{{ \App\Support\PersianNumber::toFa($stats['orders_pending']) }}</div>
-            <div style="font-size:11px;opacity:.6;margin-top:2px">در انتظار</div>
-        </div>
-        <div class="sg-settings-card" style="text-align:center;padding:14px 10px">
-            <div style="font-size:26px">🚚</div>
-            <div style="font-size:22px;font-weight:800;color:var(--gold-dark);margin-top:4px">{{ \App\Support\PersianNumber::toFa($stats['orders_courier']) }}</div>
-            <div style="font-size:11px;opacity:.6;margin-top:2px">تحویل مامور</div>
-        </div>
-        <div class="sg-settings-card" style="text-align:center;padding:14px 10px">
-            <div style="font-size:26px">👥</div>
-            <div style="font-size:22px;font-weight:800;color:var(--primary);margin-top:4px">{{ \App\Support\PersianNumber::toFa($stats['customers']) }}</div>
-            <div style="font-size:11px;opacity:.6;margin-top:2px">مشتریان</div>
-        </div>
-        <div class="sg-settings-card" style="text-align:center;padding:14px 10px">
-            <div style="font-size:26px">💎</div>
-            <div style="font-size:22px;font-weight:800;color:var(--primary);margin-top:4px">{{ \App\Support\PersianNumber::toFa($stats['certificates']) }}</div>
-            <div style="font-size:11px;opacity:.6;margin-top:2px">شناسنامه</div>
+    {{-- ═══ هدر ═══ --}}
+    <div class="sg-dash-head">
+        <div>
+            <h1>🏠 داشبورد</h1>
+            <p>نمای کلی سیستم — {{ \App\Support\PersianDate::format(now(), 'Y/m/d') }}</p>
         </div>
     </div>
 
-    {{-- Chart --}}
-    <div class="sg-settings-card" style="margin-bottom:16px">
-        <h3>📈 روند ۷ روز اخیر</h3>
-        @php $max = collect($daily)->max('count') ?: 1; @endphp
-        <div style="display:flex;align-items:flex-end;gap:6px;height:140px;padding-top:10px">
-            @foreach($daily as $d)
-                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
-                    <div style="font-size:10px;font-weight:700;color:var(--primary)">{{ $d['count'] ?: '' }}</div>
-                    <div style="width:100%;background:linear-gradient(to top, #14b8a6, #0891b2);border-radius:6px 6px 0 0;transition:all .3s" style="height:{{ max(4, $d['count']/$max*100) }}%"></div>
-                    <div style="font-size:9px;font-family:monospace;opacity:.6">{{ $d['date'] }}</div>
-                </div>
-            @endforeach
-        </div>
-    </div>
+    {{-- ═══ ردیف اول: در انتظار تامین (تمام عرض) ═══ --}}
+    @php
+        try {
+            $awaitingSupply = \App\Models\Order::where(function($q){
+                $q->whereIn('supply_status', ['awaiting_supply','pending','default'])
+                  ->orWhereNull('supply_status');
+            })->count();
+            $supplyToday = \App\Models\Order::where(fn($q) =>
+                $q->whereIn('supply_status', ['found','delivered_to_shipping'])
+            )->whereDate('updated_at', today())->count();
+        } catch (\Throwable $e) { $awaitingSupply = 0; $supplyToday = 0; }
+    @endphp
 
-    {{-- Recent --}}
-    <div class="sg-settings-card">
-        <h3>🕐 آخرین سفارشات</h3>
-        @forelse($recent as $o)
-            <div style="padding:10px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;font-size:12px">
-                <div>
-                    <strong>#{{ $o->order_number }}</strong> — {{ $o->customer_name ?? '—' }}
-                    <div style="font-size:10px;opacity:.5;font-family:monospace" dir="ltr">{{ $o->phone }}</div>
-                </div>
-                <div style="text-align:left">
-                    <div style="font-weight:700;font-family:monospace">{{ number_format($o->amount ?? 0) }}</div>
-                    <div style="font-size:10px;opacity:.5">{{ \App\Support\PersianDate::format($o->created_at, 'Y/m/d') }}</div>
+    <button type="button" wire:click="$dispatch('openSupplyModal')"
+        class="sg-kpi-awaiting">
+        <div class="sg-kpi-awaiting-left">
+            <div class="sg-kpi-awaiting-icon">📦</div>
+            <div>
+                <div class="sg-kpi-awaiting-title">در انتظار تامین</div>
+                <div class="sg-kpi-awaiting-sub">
+                    {{ \App\Support\PersianNumber::toFa($supplyToday) }} مورد امروز تحویل ارسال شد
                 </div>
             </div>
-        @empty
-            <p style="text-align:center;padding:20px;opacity:.5">سفارشی نیست</p>
-        @endforelse
+        </div>
+        <div class="sg-kpi-awaiting-count">
+            {{ \App\Support\PersianNumber::toFa($awaitingSupply) }}
+        </div>
+        <div class="sg-kpi-awaiting-arrow">←</div>
+    </button>
+
+    {{-- ═══ ردیف دوم: KPI های اصلی (۳×N) ═══ --}}
+    @php
+        try {
+            $stats = [
+                ['orders_today',   '📥', 'سفارش امروز',      \App\Models\Order::whereDate('created_at', today())->count(),                          '#3b82f6'],
+                ['orders_pending', '⏳', 'در انتظار',         \App\Models\Order::where('status','pending')->count(),                                 '#f59e0b'],
+                ['orders_courier', '🚚', 'تحویل مامور',      \App\Models\Order::where('status','courier')->count(),                                 '#10b981'],
+                ['orders_check',   '🔍', 'چک نهایی',         \App\Models\Order::where('status','final-check')->count(),                             '#8b5cf6'],
+                ['customers',      '👥', 'مشتریان',          \App\Models\Customer::count(),                                                         '#06b6d4'],
+                ['certificates',   '💎', 'شناسنامه',         \App\Models\Certificate::count(),                                                      '#f43f5e'],
+                ['products',       '📦', 'محصولات',          \App\Models\Product::count(),                                                          '#6366f1'],
+                ['sales_today',    '💰', 'فروش امروز',       \App\Models\Order::whereDate('created_at', today())->sum('amount'),                    '#22c55e'],
+                ['sales_month',    '📊', 'فروش ماه',         \App\Models\Order::where('created_at','>=', now()->subDays(30))->sum('amount'),        '#f97316'],
+            ];
+        } catch (\Throwable $e) { $stats = []; }
+    @endphp
+
+    <div class="sg-dash-grid">
+        @foreach($stats as $s)
+            <div class="sg-kpi-card" style="--c:{{ $s[4] }}">
+                <div class="sg-kpi-card-top">
+                    <span class="sg-kpi-card-icon">{{ $s[1] }}</span>
+                    <span class="sg-kpi-card-label">{{ $s[2] }}</span>
+                </div>
+                <div class="sg-kpi-card-value">
+                    @if(str_contains($s[0], 'sales'))
+                        {{ \App\Support\PersianNumber::toFa(number_format($s[3] / 1000)) }}
+                        <span class="sg-kpi-unit">هزار</span>
+                    @else
+                        {{ \App\Support\PersianNumber::toFa($s[3]) }}
+                    @endif
+                </div>
+            </div>
+        @endforeach
     </div>
+
+    {{-- ═══ ردیف سوم: نمودار و جدول‌ها ═══ --}}
+    <div class="sg-dash-sections">
+
+        {{-- کانال فروش --}}
+        @php
+            try {
+                $channels = \App\Models\Order::selectRaw('sales_channel, COUNT(*) as cnt, SUM(amount) as total')
+                    ->groupBy('sales_channel')
+                    ->orderByDesc('cnt')
+                    ->limit(6)
+                    ->get();
+            } catch (\Throwable $e) { $channels = collect(); }
+        @endphp
+
+        @if($channels->count())
+        <details class="sg-dash-section" open>
+            <summary>
+                <span class="sg-dash-sec-icon">🏷</span>
+                <span class="sg-dash-sec-title">کانال‌های فروش</span>
+                <span class="sg-dash-sec-badge">{{ \App\Support\PersianNumber::toFa($channels->count()) }}</span>
+            </summary>
+            <div class="sg-dash-section-body">
+                <div class="sg-ch-list">
+                    @foreach($channels as $ch)
+                        @php $pct = $channels->sum('cnt') > 0 ? ($ch->cnt / $channels->sum('cnt')) * 100 : 0; @endphp
+                        <div class="sg-ch-row">
+                            <x-channel-badge :channel="$ch->sales_channel" />
+                            <div class="sg-ch-bar">
+                                <div class="sg-ch-bar-fill" style="width:{{ round($pct, 1) }}%"></div>
+                            </div>
+                            <div class="sg-ch-count">{{ \App\Support\PersianNumber::toFa($ch->cnt) }}</div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </details>
+        @endif
+
+        {{-- آخرین سفارشات --}}
+        @php
+            try {
+                $recent = \App\Models\Order::with(['customer','items'])
+                    ->orderByDesc('created_at')->limit(5)->get();
+            } catch (\Throwable $e) { $recent = collect(); }
+        @endphp
+
+        @if($recent->count())
+        <details class="sg-dash-section" open>
+            <summary>
+                <span class="sg-dash-sec-icon">🕐</span>
+                <span class="sg-dash-sec-title">آخرین سفارشات</span>
+                <span class="sg-dash-sec-badge">{{ \App\Support\PersianNumber::toFa($recent->count()) }}</span>
+            </summary>
+            <div class="sg-dash-section-body" style="padding:0">
+                <table class="sg-dash-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>مشتری</th>
+                            <th>کانال</th>
+                            <th>مبلغ</th>
+                            <th>تاریخ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($recent as $o)
+                            <tr onclick="Livewire.dispatch('open-order-view', {orderId: {{ $o->id }}})" style="cursor:pointer">
+                                <td class="mono">#{{ $o->order_number }}</td>
+                                <td>
+                                    <div style="font-weight:600">{{ $o->customer_name ?? '—' }}</div>
+                                    <div style="font-size:10px;color:#94a3b8" dir="ltr">{{ $o->phone }}</div>
+                                </td>
+                                <td><x-channel-badge :channel="$o->sales_channel" /></td>
+                                <td class="mono">{{ \App\Support\PersianNumber::toFa(number_format($o->amount)) }}</td>
+                                <td style="font-size:10.5px;color:#64748b">
+                                    {{ \App\Support\PersianDate::format($o->created_at, 'm/d H:i') }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </details>
+        @endif
+
+        {{-- بهترین مشتریان --}}
+        @php
+            try {
+                $topCustomers = \App\Models\Customer::query()
+                    ->withCount('orders')
+                    ->withSum('orders', 'amount')
+                    ->having('orders_count', '>', 0)
+                    ->orderByDesc('orders_sum_amount')
+                    ->limit(5)
+                    ->get();
+            } catch (\Throwable $e) { $topCustomers = collect(); }
+        @endphp
+
+        @if($topCustomers->count())
+        <details class="sg-dash-section">
+            <summary>
+                <span class="sg-dash-sec-icon">🏆</span>
+                <span class="sg-dash-sec-title">بهترین مشتریان</span>
+                <span class="sg-dash-sec-badge">{{ \App\Support\PersianNumber::toFa($topCustomers->count()) }}</span>
+            </summary>
+            <div class="sg-dash-section-body" style="padding:0">
+                <table class="sg-dash-table">
+                    <thead>
+                        <tr>
+                            <th>مشتری</th>
+                            <th>تعداد</th>
+                            <th>مجموع خرید</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($topCustomers as $c)
+                            <tr>
+                                <td>
+                                    <div style="font-weight:600">{{ trim($c->first_name.' '.$c->last_name) ?: '—' }}</div>
+                                    <div style="font-size:10px;color:#94a3b8" dir="ltr">{{ $c->phone }}</div>
+                                </td>
+                                <td class="mono">{{ \App\Support\PersianNumber::toFa($c->orders_count) }}</td>
+                                <td class="mono">{{ \App\Support\PersianNumber::toFa(number_format($c->orders_sum_amount / 1000)) }} هزار</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </details>
+        @endif
+    </div>
+
 </div>

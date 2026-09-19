@@ -1,0 +1,278 @@
+/* ═══════════════════════════════════════════════════════
+   ShopGun — Unified Modal System v6
+   لایه‌بندی:
+     - اپلیکیشن:        1..999
+     - مودال پایه:      10000
+     - مودال ثانویه:    11000
+     - مودال سوم:       12000
+     - Toast:           13000
+   ═══════════════════════════════════════════════════════ */
+
+:root {
+    --z-app:              1;
+    --z-header:           100;
+    --z-mobile-bar:       200;
+    --z-modal-base:       10000;
+    --z-modal-secondary:  11000;
+    --z-modal-tertiary:   12000;
+    --z-toast:            13000;
+
+    /* رنگ‌ها */
+    --sg-bg:        #f5f7fa;
+    --sg-card:      #ffffff;
+    --sg-border:    #e2e8f0;
+    --sg-text:      #1e293b;
+    --sg-text-2:    #475569;
+    --sg-text-3:    #94a3b8;
+    --sg-primary:   #1a5276;
+    --sg-gold:      #c9a84c;
+    --sg-green:     #059669;
+    --sg-red:       #dc2626;
+    --sg-blue:      #2563eb;
+    --sg-radius:    12px;
+    --sg-radius-lg: 16px;
+    --sg-shadow:    0 4px 12px rgba(0,0,0,.06);
+    --sg-shadow-lg: 0 20px 40px rgba(0,0,0,.15);
+}
+
+/* فونت یکپارچه */
+html, body, button, input, select, textarea, .sg-modal, .sg-modal * {
+    font-family: 'Vazirmatn', 'Tahoma', -apple-system, sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+body { font-size: 13px; color: var(--sg-text); }
+
+/* ─── Backdrop ─── */
+.sg-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: var(--z-modal-base);
+    overflow-y: auto;
+    animation: sgFadeIn .15s ease-out;
+}
+@keyframes sgFadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes sgPop { from { opacity: 0; transform: translateY(20px) scale(.97) } to { opacity: 1; transform: none } }
+
+/* سطوح */
+.sg-modal-backdrop.sg-layer-2 { z-index: var(--z-modal-secondary) !important; }
+.sg-modal-backdrop.sg-layer-3 { z-index: var(--z-modal-tertiary) !important; }
+
+/* ─── Modal Box ─── */
+.sg-modal {
+    position: relative;
+    background: var(--sg-card);
+    border-radius: var(--sg-radius-lg);
+    width: 100%;
+    max-width: 900px;
+    max-height: calc(100vh - 32px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: var(--sg-shadow-lg);
+    animation: sgPop .2s ease-out;
+    direction: rtl;
+}
+.sg-modal-sm { max-width: 480px; }
+.sg-modal-md { max-width: 640px; }
+.sg-modal-lg { max-width: 900px; }
+.sg-modal-xl { max-width: 1100px; }
+
+.sg-modal-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--sg-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: linear-gradient(180deg, #fafbfc, #fff);
+    flex-shrink: 0;
+}
+.sg-modal-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--sg-text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.4;
+}
+.sg-modal-subtitle {
+    font-size: 11px;
+    color: var(--sg-text-3);
+    font-weight: 500;
+    margin-top: 2px;
+}
+.sg-modal-close {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--sg-text-3);
+    font-size: 18px;
+    transition: all .15s;
+    flex-shrink: 0;
+}
+.sg-modal-close:hover { background: #f1f5f9; color: var(--sg-text); }
+
+.sg-modal-body {
+    padding: 16px 18px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* ─── Buttons ─── */
+.sg-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    text-decoration: none;
+    line-height: 1.4;
+}
+.sg-btn:hover { transform: translateY(-1px); }
+.sg-btn:active { transform: none; }
+.sg-btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
+.sg-btn-blue    { background: #2563eb; color: #fff; }
+.sg-btn-blue:hover { background: #1d4ed8; }
+.sg-btn-green   { background: #059669; color: #fff; }
+.sg-btn-green:hover { background: #047857; }
+.sg-btn-red     { background: #dc2626; color: #fff; }
+.sg-btn-indigo  { background: #eef2ff; color: #4338ca; }
+.sg-btn-indigo:hover { background: #e0e7ff; }
+.sg-btn-gray    { background: #f1f5f9; color: #334155; border-color: #e2e8f0; }
+.sg-btn-gray:hover { background: #e2e8f0; }
+.sg-btn-gold    { background: linear-gradient(135deg, #c9a84c, #a8873a); color: #fff; }
+
+/* ─── Inputs ─── */
+.sg-input, .sg-select, .sg-textarea, .os-input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 9px;
+    font-size: 12.5px;
+    font-family: inherit;
+    background: #fff;
+    color: var(--sg-text);
+    outline: none;
+    transition: all .15s;
+    box-sizing: border-box;
+}
+.sg-input:focus, .sg-select:focus, .sg-textarea:focus, .os-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+}
+.sg-textarea { resize: vertical; min-height: 70px; }
+
+/* ─── Font Awesome-like glyphs (fallback) ─── */
+.sg-icon { font-size: 16px; line-height: 1; }
+
+/* ─── Dark mode ─── */
+html[data-theme="dark"] {
+    --sg-bg:      #0f172a;
+    --sg-card:    #111827;
+    --sg-border:  #374151;
+    --sg-text:    #f1f5f9;
+    --sg-text-2:  #cbd5e1;
+    --sg-text-3:  #94a3b8;
+}
+html[data-theme="dark"] .sg-modal-header {
+    background: linear-gradient(180deg, #1f2937, #111827);
+}
+html[data-theme="dark"] .sg-modal-close:hover { background: #374151; }
+
+/* ─── Mobile ─── */
+@media (max-width: 640px) {
+    .sg-modal-backdrop { padding: 8px; }
+    .sg-modal {
+        max-height: calc(100vh - 16px);
+        border-radius: 12px;
+        max-width: none !important;
+    }
+    .sg-modal-header { padding: 12px 14px; }
+    .sg-modal-body { padding: 12px 14px; }
+}
+
+/* ─── Sidebar ─── */
+.sg-sidebar-accounting {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    color: inherit;
+    text-decoration: none;
+    transition: all .15s;
+}
+.sg-sidebar-accounting:hover { background: rgba(0,0,0,.05); }
+.sg-sidebar-accounting.active { background: rgba(26,82,118,.15); color: var(--sg-primary); font-weight: 700; }
+
+
+
+/* ═══ Fix v7 — Z-Index Layers (SURGICAL) ═══ */
+:root {
+    --sg-z-supply:    9000 !important;
+    --sg-z-modal:     10000 !important;
+    --sg-z-modal-2:   11000 !important;
+    --sg-z-toast:     13000 !important;
+}
+
+/* پیش‌فرض همه مودال‌ها روی 10000 */
+
+
+/* Supply Modal — پایین‌تر از بقیه */
+.sg-modal-backdrop.sg-modal-under,
+.sg-modal-backdrop[data-layer="supply"] {
+    z-index: var(--sg-z-supply) !important;
+}
+
+/* Product Quick View — بالا */
+.sg-modal-backdrop.sg-product-modal-backdrop {
+    z-index: var(--sg-z-modal-2) !important;
+}
+
+/* StatusChanger */
+.sg-modal-backdrop[data-layer="status"] {
+    z-index: var(--sg-z-modal-2) !important;
+}
+
+/* Toast */
+.sg-toast-container { z-index: var(--sg-z-toast) !important; }
+
+/* رفع فونت */
+html, body, .sg-modal, .sg-modal *,
+button, input, select, textarea {
+    font-family: 'Vazirmatn', Tahoma, -apple-system, sans-serif !important;
+}
+
+/* رفع مشکل عرض کارت محصول در Supply */
+.sg-supply-product {
+    cursor: pointer;
+    transition: background .15s;
+}
+.sg-supply-product:hover {
+    background: #eef2ff !important;
+}
+.sg-supply-product-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}

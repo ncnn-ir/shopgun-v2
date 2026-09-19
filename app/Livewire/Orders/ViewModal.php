@@ -1,133 +1,165 @@
 <?php
 namespace App\Livewire\Orders;
 
-use App\Models\Customer;
 use App\Models\Order;
-use Livewire\Attributes\On;
 use Livewire\Component;
+use Livewire\Attributes\On;
 
 class ViewModal extends Component
 {
-    public bool $show = false;
-    public ?Order $order = null;
-    public array $customerStats = [];
-    public array $timeline = [];
+    public bool $open = false;
+    public ?int $orderId = null;
+    public ?array $order = null;
 
     #[On('open-order-view')]
-    public function open(int $orderId): void
+    public function openView($orderId = null): void
     {
-        $this->order = Order::with(['customer', 'items', 'channel'])->find($orderId);
-        if (!$this->order) return;
-
-        // آمار مشتری
-        if ($this->order->customer_id) {
-            $customer = Customer::find($this->order->customer_id);
-            if ($customer) {
-                $orders = $customer->orders()->orderBy('created_at')->get();
-                $this->customerStats = [
-                    'total' => $orders->count(),
-                    'sum' => (float) $orders->sum('amount'),
-                    'first' => $orders->first()?->created_at,
-                    'last' => $orders->last()?->created_at,
-                ];
-            }
-        }
-
-        $this->buildTimeline();
-        $this->show = true;
+        if (!$orderId) return;
+        $this->orderId = (int) $orderId;
+        $o = Order::with(['customer', 'items'])->find($this->orderId);
+        if (!$o) return;
+        $this->order = $this->buildData($o);
+        $this->open = true;
     }
 
-    protected function buildTimeline(): void
+    public function close(): void
     {
-        $stages = [
-            ['id' => 'pending', 'label' => 'ثبت سفارش', 'icon' => '📝'],
-            ['id' => 'final-check', 'label' => 'چک نهایی', 'icon' => '🔍'],
-            ['id' => 'courier', 'label' => 'تحویل مامور', 'icon' => '🚚'],
-        ];
+        $this->open = false;
+        $this->orderId = null;
+        $this->order = null;
+    }
 
-        $currentStatus = $this->order->status ?? 'pending';
-        $currentIdx = array_search($currentStatus, array_column($stages, 'id'));
-        if ($currentIdx === false) $currentIdx = 0;
+    public function changeStatus(string $newStatus): void
+    {
+        if (!$this->orderId) return;
+        $o = Order::find($this->orderId);
+        if (!$o) return;
+        $o->update(['status' => $newStatus]);
+        $this->order = $this->buildData($o->fresh(['customer', 'items']));
+        $this->dispatch('$refresh');
+    }
 
-        // گرفتن تاریخچه از activity log
-        $activities = [];
-        try {
-            $logs = \Spatie\Activitylog\Models\Activity::where('subject_type', Order::class)
-                ->where('subject_id', $this->order->id)
-                ->where('event', 'updated')
-                ->orderBy('created_at')
-                ->get();
-
-            foreach ($logs as $log) {
-                $changes = $log->properties['attributes'] ?? [];
-                if (isset($changes['status'])) {
-                    $activities[] = [
-                        'status' => $changes['status'],
-                        'at' => $log->created_at,
-                    ];
-                }
-            }
-        } catch (\Throwable $e) {}
-
-        // اگر activity نیست، از created_at سفارش استفاده کن
-        if (empty($activities)) {
-            $activities[] = ['status' => 'pending', 'at' => $this->order->created_at];
-            if ($currentIdx >= 1) $activities[] = ['status' => 'final-check', 'at' => $this->order->updated_at];
-            if ($currentIdx >= 2) $activities[] = ['status' => 'courier', 'at' => $this->order->updated_at];
-        }
-
-        $this->timeline = [];
-        foreach ($stages as $i => $stage) {
-            $state = $i < $currentIdx ? 'done' : ($i === $currentIdx ? 'current' : '');
-
-            // پیدا کردن تاریخ این مرحله از activity
-            $at = null;
-            foreach ($activities as $a) {
-                if ($a['status'] === $stage['id']) {
-                    $at = $a['at'];
-                    break;
-                }
-            }
-
-            $this->timeline[] = [
-                'label' => $stage['label'],
-                'icon' => $stage['icon'],
-                'state' => $state,
-                'date' => $at ? \App\Support\PersianDate::format($at, 'Y/m/d') : '',
-                'time' => $at ? $at->format('H:i') : '',
+    protected function buildData(Order $o): array
+    {
+        // محاسبه مجموع
+        $itemsTotal = 0;
+        $itemsList = [];
+        foreach ($o->items as $item) {
+            $line = ($item->price ?? 0) * ($item->quantity ?? 1);
+            $itemsTotal += $line;
+            $itemsList[] = [
+                'title' => $item->title ?? $item->name ?? '—',
+                'sku'   => $item->sku ?? null,
+                'qty'   => $item->quantity ?? 1,
+                'price' => (float) ($item->price ?? 0),
+                'line'  => (float) $line,
             ];
         }
+
+        // تایم‌لاین
+        $timeline = [];
+        if ($o->created_at) {
+            $timeline[] = [
+                'label' => 'ثبت سفارش',
+                'icon'  => '📝',
+                'date'  => $o->created_at,
+                'state' => 'done',
+            ];
+        }
+        if ($o->paid_at || $o->status === 'processing' || $o->status === 'completed') {
+            $timeline[] = [
+                'label' => 'پرداخت',
+                'icon'  => '💳',
+                'date'  => $o->paid_at ?? $o->created_at,
+                'state' => 'done',
+            ];
+        }
+        if ($o->supply_found_at) {
+            $timeline[] = [
+                'label' => 'پیدا شد',
+                'icon'  => '📦',
+                'date'  => $o->supply_found_at,
+                'state' => 'done',
+            ];
+        }
+        if ($o->delivered_to_shipping_at) {
+            $timeline[] = [
+                'label' => 'تحویل ارسال',
+                'icon'  => '🚚',
+                'date'  => $o->delivered_to_shipping_at,
+                'state' => 'done',
+            ];
+        }
+        if ($o->shipped_at) {
+            $timeline[] = [
+                'label' => 'ارسال',
+                'icon'  => '✈️',
+                'date'  => $o->shipped_at,
+                'state' => 'done',
+            ];
+        }
+        if ($o->delivered_at || $o->status === 'completed') {
+            $timeline[] = [
+                'label' => 'تحویل مشتری',
+                'icon'  => '🏠',
+                'date'  => $o->delivered_at ?? $o->updated_at,
+                'state' => 'done',
+            ];
+        }
+
+        // وضعیت بعدی (current)
+        $nextState = match ($o->status) {
+            'pending'     => 'پرداخت',
+            'final-check' => 'چک نهایی',
+            'courier'     => 'تحویل مامور',
+            'completed'   => null,
+            default       => null,
+        };
+
+        // وضعیت برچسب
+        $statusMap = [
+            'pending'     => ['📝', 'ثبت سفارش',      '#f59e0b', '#fef3c7'],
+            'final-check' => ['🔍', 'چک نهایی',       '#3b82f6', '#dbeafe'],
+            'courier'     => ['🚚', 'تحویل مامور',    '#10b981', '#d1fae5'],
+            'completed'   => ['✅', 'تکمیل شده',      '#059669', '#d1fae5'],
+            'cancelled'   => ['❌', 'لغو شده',        '#dc2626', '#fee2e2'],
+            'processing'  => ['🔄', 'در حال انجام',   '#6366f1', '#eef2ff'],
+        ];
+        $st = $statusMap[$o->status ?? 'pending'] ?? $statusMap['pending'];
+
+        return [
+            'id'           => $o->id,
+            'number'       => $o->order_number ?? $o->id,
+            'status'       => $o->status,
+            'status_icon'  => $st[0],
+            'status_label' => $st[1],
+            'status_color' => $st[2],
+            'status_bg'    => $st[3],
+            'amount'       => (float) ($o->amount ?? 0),
+            'insurance'    => (float) ($o->insurance ?? 0),
+            'created'      => $o->created_at,
+            'updated'      => $o->updated_at,
+            'customer' => [
+                'name'  => trim(($o->customer->first_name ?? '') . ' ' . ($o->customer->last_name ?? '')) ?: 'مهمان',
+                'phone' => $o->phone ?? $o->customer->phone ?? '',
+                'email' => $o->customer->email ?? '',
+            ],
+            'address'      => $o->address ?? '',
+            'postal'       => $o->postal_code ?? '',
+            'channel'      => $o->sales_channel,
+            'note'         => $o->notes ?? '',
+            'customer_note'=> $o->customer_note ?? '',
+            'tracking'     => $o->tracking_code ?? '',
+            'carrier'      => $o->carrier ?? '',
+            'items'        => $itemsList,
+            'items_total'  => $itemsTotal,
+            'timeline'     => $timeline,
+            'next_state'   => $nextState,
+        ];
     }
 
-    public function close(): void { $this->show = false; $this->order = null; }
-
-    public function cycleStatus(): void
+    public function render()
     {
-        if (!$this->order) return;
-        $statuses = ['pending', 'final-check', 'courier'];
-        $cur = array_search($this->order->status, $statuses);
-        $next = $statuses[($cur === false ? 0 : ($cur + 1)) % count($statuses)];
-        $this->order->update(['status' => $next]);
-        $this->order->refresh();
-        $this->open($this->order->id);
-        $this->dispatch('order-saved');
-        $this->dispatch('notify', type: 'success', message: 'وضعیت تغییر کرد');
+        return view('livewire.orders.view-modal');
     }
-
-    public function editOrder(): void
-    {
-        $id = $this->order->id;
-        $this->close();
-        $this->dispatch('open-order-form', orderId: $id);
-    }
-
-    public function deleteOrder(): void
-    {
-        $this->order?->delete();
-        $this->close();
-        $this->dispatch('order-saved');
-        $this->dispatch('notify', type: 'success', message: 'حذف شد');
-    }
-
-    public function render() { return view('livewire.orders.view-modal'); }
 }

@@ -10,6 +10,13 @@ class OrderObserver
 {
     public function created(Order $order): void
     {
+        // ★ سفارشات pending → awaiting_supply به صورت خودکار
+        if ($order->status === 'pending' && $order->supply_status === 'default') {
+            try {
+                $order->updateQuietly(['supply_status' => 'awaiting_supply']);
+            } catch (\Throwable $e) {}
+        }
+
         if (! Route::has('orders.show')) {
             return;
         }

@@ -52,17 +52,107 @@
     {{-- PowerGrid Assets --}}
     @powerGridStyles
 
+<link rel="stylesheet" href="{{ asset('css/shopgun-system.css') }}?v=1">
+<style>
+/* ═══ Mobile Overflow Fix ═══ */
+html, body {
+    max-width: 100vw;
+    overflow-x: hidden !important;
+}
+.sg-layout, .sg-main, main {
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+body * {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+.sg-table-wrap, .sg-table-container, .sg-table-scroll {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+}
+img, video, svg, canvas {
+    max-width: 100%;
+    height: auto;
+}
+@media (max-width: 768px) {
+    body { font-size: 13px; }
+    .sg-main, main { padding: 8px !important; }
+    .sg-card, .sg-settings-card {
+        padding: 10px !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    table { font-size: 11px; }
+    .form-grid { grid-template-columns: 1fr !important; }
+    .form-grid > [class*="col-"] { grid-column: span 1 !important; }
+}
+@media (max-width: 480px) {
+    body { font-size: 12px; }
+    h1 { font-size: 16px !important; }
+    h2 { font-size: 14px !important; }
+    h3 { font-size: 13px !important; }
+    .btn, button { padding: 6px 10px !important; font-size: 11px !important; }
+}
+</style>
+    <link rel="stylesheet" href="{{ asset('css/shopgun-channels.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/shopgun-modals.css') }}?v=6">
+    <link rel="stylesheet" href="{{ asset('css/shopgun-view-modal.css') }}?v=6">
 </head>
 <body>
 
 @auth
-    <livewire:components.shipment-timeline />
-    <livewire:orders.import-postal :key="'imp'" />
-    <livewire:orders.form-modal :key="'ofm'" />
-    <livewire:orders.view-modal :key="'ovm'" />
-    <livewire:customers.profile-modal :key="'cpm'" />
-    <livewire:certificates.view-modal :key="'cvm'" />
-    <livewire:certificates.create :key="'ccm'" />
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    {{-- ═══ Modals (Alpine-based) ═══ --}}
+    
+    
+    
+    
+    
+    
+    
+
+    <livewire:orders.view-modal :key="'vm-x'" />
+    <livewire:orders.supply-modal :key="'sm-x'" />
+    <livewire:products.product-quick-view :key="'pqv-x'" />
+    <livewire:orders.form-modal :key="'ofm-x'" />
+    <livewire:customers.profile-modal :key="'cpm-x'" />
+    <livewire:certificates.view-modal :key="'cvm-x'" />
+    <livewire:certificates.create :key="'ccm-x'" />
 @endauth
 
 {{-- ═══ Header ═══ --}}
@@ -134,6 +224,7 @@
                 ['certificates.index','💎','کارت'],
                 ['certificates.create','✨','کارت جدید'],
                 ['reports.index','📊','گزارش'],
+                ['accounting.index','💰','حساب'],
                 ['settings.index','⚙️','تنظیم'],
                 ['activity-log','📜','لاگ'],
             ];
@@ -271,6 +362,44 @@
 @livewireScripts
 @stack('scripts')
 @powerGridScripts
+
+<script>
+// ═══ Global Product Popup Handler ═══
+window.showProductPopup = function(productId, sku) {
+    try {
+        if (window.Livewire) {
+            Livewire.dispatch('openProductView', { 
+                productId: parseInt(productId) || null,
+                sku: sku || null
+            });
+        }
+    } catch(e) {
+        console.error('showProductPopup error:', e);
+    }
+    return false;
+};
+
+// ═══ Global Order View Handler ═══
+window.showOrderView = function(orderId) {
+    try {
+        if (window.Livewire) {
+            Livewire.dispatch('open-order-view', { orderId: parseInt(orderId) });
+        }
+    } catch(e) {
+        console.error('showOrderView error:', e);
+    }
+    return false;
+};
+
+// ═══ Auto-close on ESC ═══
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        if (window.Livewire) {
+            Livewire.dispatch('close-all-modals');
+        }
+    }
+});
+</script>
 
 </body>
 </html>

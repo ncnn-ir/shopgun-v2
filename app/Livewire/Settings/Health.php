@@ -320,7 +320,6 @@ class Health extends Component
             'tightenco/ziggy'                        => ['Ziggy',        'js'],
             'mrezanomani/livewire-jalali-datepicker' => ['JalaliPicker', 'ui'],
             'nawrasbukhari/laravelgithubupdater'     => ['GitHubUpdater','update'],
-            'tivents/livewire-form-builder'          => ['FormBuilder',  'form'],
         ];
 
         $this->packages = [];

@@ -1,3 +1,4 @@
+@teleport('body')
 <div>
 @if($show && $certificate)
 <div style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:96;display:flex;align-items:flex-start;justify-content:center;padding:10px;overflow-y:auto"
@@ -76,3 +77,4 @@ window.downloadCertModal = function() {
     if (!w) { alert('پاپ‌آپ بلاک شده — لطفا اجازه بده'); }
 };
 </script>
+@endteleport

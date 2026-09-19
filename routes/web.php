@@ -197,6 +197,7 @@ Route::middleware('auth')->group(function () {
 
     // ═══ Bulk Products ═══
     Route::get('/products/bulk', \App\Livewire\Products\BulkCreate::class)->name('products.bulk');
+    Route::get('/products/bulk/run/{run}', \App\Livewire\Products\BulkRunDetail::class)->name('products.bulk.run');
 
     // ═══ Reports ═══
     Route::get('/reports', ReportsIndex::class)->name('reports.index');
@@ -244,9 +245,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/stones', SettingsStones::class)->name('stones');
         Route::get('/metals', SettingsMetals::class)->name('metals');
         Route::get('/health', \App\Livewire\Settings\Health::class)->name('health');
+        Route::get('/sync', \App\Livewire\Settings\SyncDashboard::class)->name('sync');
         Route::get('/labels', \App\Livewire\Settings\Labels::class)->name('labels');
         Route::get('/channels', \App\Livewire\Settings\Channels::class)->name('channels');
         Route::get('/health', \App\Livewire\Settings\Health::class)->name('health');
+        Route::get('/sync', \App\Livewire\Settings\SyncDashboard::class)->name('sync');
         Route::get('/labels', \App\Livewire\Settings\Labels::class)->name('labels');
         Route::get('/channels', \App\Livewire\Settings\Channels::class)->name('channels');
         Route::get('/channels', SettingsChannels::class)->name('channels');
@@ -261,4 +264,52 @@ Route::middleware('auth')->group(function () {
             return response()->json(['ok' => true]);
         })->name('update-header-logo');
     });
+});
+
+// ═══ ShopGun — Supply List & Timeline (auto-added) ═══
+use App\Livewire\Supply\SupplyList as SupplyListPage;
+use App\Livewire\Orders\OrderTimelineModal;
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/supply', SupplyListPage::class)->name('supply.index');
+});
+// ══════════════════════════════════════════════════════
+
+// ═══ Order Statuses Settings (auto) ═══
+use App\Livewire\Settings\OrderStatuses as OrderStatusesSettings;
+Route::middleware(['auth'])->group(function () {
+    Route::get('/settings/order-statuses', OrderStatusesSettings::class)->name('settings.order-statuses');
+});
+// ══════════════════════════════════════════
+
+// ═══ Order channel update (auto) ═══
+use App\Http\Controllers\OrderChannelController;
+Route::middleware(['auth'])->group(function () {
+    Route::post('/orders/{order}/channel', [OrderChannelController::class, 'update'])
+        ->name('orders.channel.update');
+});
+// ═══════════════════════════════════════
+// ═══ Storage Fallback (Windows symlink fix) ═══
+Route::get('/storage/{path}', function (string $path) {
+    $full = storage_path('app/public/' . $path);
+    if (!file_exists($full)) abort(404);
+    return response()->file($full);
+})->where('path', '.*')->name('storage.fallback');
+// ═════════════════════════════════════════════════
+Route::middleware(['auth'])->group(function () {
+    
+});
+Route::middleware(['auth'])->group(function () {
+    
+});
+Route::middleware(['auth'])->group(function () {
+    
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   Accounting (FQCN مستقیم — no use)
+   ═══════════════════════════════════════════════════════════════ */
+Route::middleware(['auth'])->group(function () {
+    Route::get('/accounting', \App\Livewire\Accounting\Index::class)
+        ->name('accounting.index');
 });

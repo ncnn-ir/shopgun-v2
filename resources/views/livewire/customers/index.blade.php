@@ -1,45 +1,72 @@
-<div>
-    <div class="sg-toolbar">
-        <div class="sg-toolbar-right">
-            <input type="text" wire:model.live.debounce.400ms="search" placeholder="🔍 جستجو..." class="form-control" style="width:220px">
-            <select wire:model.live="filter" class="form-control" style="width:auto;display:inline-block">
-                <option value="">همه</option>
-                <option value="has_orders">با سفارش</option>
-                <option value="no_orders">بدون سفارش</option>
-            </select>
-        </div>
-        <a href="{{ route('customers.create') }}" wire:navigate class="btn btn-primary">➕ مشتری جدید</a>
+<div dir="rtl" style="padding:10px">
+
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:8px;margin-bottom:10px;display:grid;grid-template-columns:2fr 1fr;gap:6px">
+        <input type="text" wire:model.live.debounce.400ms="search" placeholder="🔍 نام یا تلفن"
+               style="width:100%;padding:7px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:12px;background:#f8fafc;box-sizing:border-box">
+        <select wire:model.live="filter" style="width:100%;padding:7px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:12px;background:#f8fafc">
+            <option value="">همه</option>
+            <option value="has_orders">با سفارش</option>
+            <option value="no_orders">بدون سفارش</option>
+        </select>
     </div>
 
-    <div class="sg-table-container">
-        <div class="sg-table-header">
-            <h2>👥 مشتریان <span style="background:var(--gold);color:var(--primary);padding:2px 10px;border-radius:20px;font-size:10.5px;font-weight:700">{{ \App\Support\PersianNumber::toFa($customers->total()) }}</span></h2>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
+        <div style="padding:8px 12px;background:linear-gradient(135deg,#1a5276,#0d3b5e);color:#fff;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-weight:700;font-size:12.5px">👥 مشتریان</span>
+            <span style="background:#c9a84c;color:#1a5276;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700">{{ \App\Support\PersianNumber::toFa($customers->total()) }}</span>
         </div>
-        <div class="sg-table-scroll">
-            <table class="sg-table">
-                <thead><tr><th>#</th><th>نام</th><th>تلفن</th><th>کدپستی</th><th>سفارشات</th><th>عملیات</th></tr></thead>
+
+        <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:11.5px;min-width:520px">
+                <thead style="background:#f8fafc">
+                    <tr>
+                        <th style="padding:7px;text-align:right;color:#1a5276">نام</th>
+                        <th style="padding:7px;text-align:right;color:#1a5276">تلفن</th>
+                        <th style="padding:7px;text-align:right;color:#1a5276">سفارش</th>
+                        <th style="padding:7px;text-align:right;color:#1a5276">مجموع</th>
+                        <th style="padding:7px;text-align:right;color:#1a5276"></th>
+                    </tr>
+                </thead>
                 <tbody>
                     @forelse($customers as $c)
-                        <tr wire:key="c-{{ $c->id }}">
-                            <td><span class="sg-row-num">{{ \App\Support\PersianNumber::toFa($loop->iteration) }}</span></td>
-                            <td><strong>{{ $c->name ?? '—' }}</strong></td>
-                            <td dir="ltr" style="font-family:monospace;font-size:11px">{{ $c->phone ?? '—' }}</td>
-                            <td dir="ltr">{{ $c->postal_code ?? '—' }}</td>
-                            <td>{{ \App\Support\PersianNumber::toFa($c->orders_count) }}</td>
-                            <td>
-                                <div class="sg-action-btns">
-                                    <a href="{{ route('customers.show', $c) }}" wire:navigate class="sg-action-btn view">👁️</a>
-                                    <a href="{{ route('customers.edit', $c) }}" wire:navigate class="sg-action-btn edit">✏️</a>
-                                    <button wire:click="delete({{ $c->id }})" wire:confirm="حذف شود؟" class="sg-action-btn delete">🗑️</button>
+                        <tr wire:key="c-{{ $c->id }}" style="border-bottom:1px solid #f1f5f9;cursor:pointer"
+                            onclick="Livewire.dispatch('open-customer-profile', {customerId: {{ $c->id }}})">
+                            <td style="padding:7px">
+                                <div style="display:flex;align-items:center;gap:8px">
+                                    <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#14b8a6,#0891b2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0">
+                                        {{ mb_substr($c->name ?? '?', 0, 1) }}
+                                    </div>
+                                    <div style="font-weight:700">{{ $c->name ?? '—' }}</div>
+                                </div>
+                            </td>
+                            <td style="padding:7px;font-family:monospace;font-size:11px" dir="ltr">{{ $c->phone ?? '—' }}</td>
+                            <td style="padding:7px">
+                                <span style="background:{{ $c->orders_count > 0 ? '#d1fae5' : '#f1f5f9' }};color:{{ $c->orders_count > 0 ? '#065f46' : '#64748b' }};padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700">
+                                    {{ \App\Support\PersianNumber::toFa($c->orders_count) }}
+                                </span>
+                            </td>
+                            <td style="padding:7px;font-family:monospace;font-size:11px;color:#16a34a;font-weight:700">
+                                {{ number_format((float) ($c->orders_sum_amount ?? 0) / 1000000, 1) }}M
+                            </td>
+                            <td style="padding:7px" onclick="event.stopPropagation()">
+                                <div style="display:flex;gap:3px">
+                                    <button onclick="Livewire.dispatch('open-customer-profile', {customerId: {{ $c->id }}})"
+                                            style="background:#dbeafe;color:#1e40af;border:none;width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:11px" title="مشاهده">👁️</button>
+                                    <a href="{{ route('customers.show', $c) }}" wire:navigate
+                                       style="background:#ede9fe;color:#5b21b6;border:none;width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;text-decoration:none" title="صفحه کامل">📄</a>
                                 </div>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6"><div style="text-align:center;padding:40px;color:var(--text-light)"><div style="font-size:44px;opacity:.5">👥</div><p>مشتری‌ای نیست</p></div></td></tr>
+                        <tr><td colspan="5" style="text-align:center;padding:30px;color:#94a3b8">
+                            <div style="font-size:36px;opacity:.4">👥</div>
+                            <div style="font-size:12px;margin-top:6px">مشتری‌ای نیست</div>
+                        </td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        <div style="padding:14px">{{ $customers->links() }}</div>
+
+        <div style="padding:10px">{{ $customers->links() }}</div>
     </div>
 </div>

@@ -1,88 +1,48 @@
-<div class="p-4 md:p-6 max-w-4xl mx-auto" dir="rtl">
+<div class="sg-page" style="padding:16px;direction:rtl">
 
-    <div class="text-center mb-6">
-        <div class="text-6xl mb-3">💎</div>
-        <h1 class="text-3xl font-extrabold text-primary">ShopGun V2</h1>
-        <p class="text-sm text-base-content/60 mt-1">جواهری مشاهیر — مدیریت سفارشات و شناسنامه</p>
-        <p class="text-xs text-base-content/40 mt-1">گروه هنری اقاقیا</p>
+    <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:56px;line-height:1">💎</div>
+        <h1 style="margin:8px 0 4px;font-size:24px;font-weight:900;color:#1a5276">شاپگان</h1>
+        <p style="margin:0;color:#64748b;font-size:12.5px">سیستم مدیریت سفارشات، شناسنامه و انبار</p>
     </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <div class="card bg-base-100 shadow border border-base-300">
-            <div class="card-body p-4 text-center">
-                <div class="text-3xl mb-2">📦</div>
-                <div class="text-2xl font-bold text-primary">
-                    {{ \App\Support\PersianNumber::toFa($stats['orders']) }}
-                </div>
-                <div class="text-xs text-base-content/60">سفارش</div>
-            </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;max-width:900px;margin:0 auto 24px">
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;text-align:center">
+            <div style="font-size:22px;font-weight:800;color:#1a5276">v2.2</div>
+            <div style="font-size:11.5px;color:#64748b;margin-top:4px">نسخه</div>
         </div>
-        <div class="card bg-base-100 shadow border border-base-300">
-            <div class="card-body p-4 text-center">
-                <div class="text-3xl mb-2">👥</div>
-                <div class="text-2xl font-bold text-primary">
-                    {{ \App\Support\PersianNumber::toFa($stats['customers']) }}
-                </div>
-                <div class="text-xs text-base-content/60">مشتری</div>
-            </div>
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;text-align:center">
+            <div style="font-size:22px;font-weight:800;color:#c9a84c">Laravel 13</div>
+            <div style="font-size:11.5px;color:#64748b;margin-top:4px">فریم‌ورک</div>
         </div>
-        <div class="card bg-base-100 shadow border border-base-300">
-            <div class="card-body p-4 text-center">
-                <div class="text-3xl mb-2">🛍️</div>
-                <div class="text-2xl font-bold text-primary">
-                    {{ \App\Support\PersianNumber::toFa($stats['products']) }}
-                </div>
-                <div class="text-xs text-base-content/60">محصول</div>
-            </div>
-        </div>
-        <div class="card bg-base-100 shadow border border-base-300">
-            <div class="card-body p-4 text-center">
-                <div class="text-3xl mb-2">💎</div>
-                <div class="text-2xl font-bold text-primary">
-                    {{ \App\Support\PersianNumber::toFa($stats['certificates']) }}
-                </div>
-                <div class="text-xs text-base-content/60">شناسنامه</div>
-            </div>
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;text-align:center">
+            <div style="font-size:22px;font-weight:800;color:#059669">PHP 8.5</div>
+            <div style="font-size:11.5px;color:#64748b;margin-top:4px">زبان</div>
         </div>
     </div>
 
-    <div class="card bg-base-100 shadow border border-base-300 mb-4">
-        <div class="card-body p-4">
-            <h2 class="font-bold text-base mb-3">⚙️ اطلاعات فنی</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div class="flex justify-between p-2 bg-base-200/50 rounded">
-                    <span class="text-base-content/60 text-sm">Laravel</span>
-                    <span class="font-mono font-bold text-xs">{{ app()->version() }}</span>
-                </div>
-                <div class="flex justify-between p-2 bg-base-200/50 rounded">
-                    <span class="text-base-content/60 text-sm">PHP</span>
-                    <span class="font-mono font-bold text-xs">{{ PHP_VERSION }}</span>
-                </div>
-                <div class="flex justify-between p-2 bg-base-200/50 rounded">
-                    <span class="text-base-content/60 text-sm">محیط</span>
-                    <span class="font-mono text-xs">{{ app()->environment() }}</span>
-                </div>
-                <div class="flex justify-between p-2 bg-base-200/50 rounded">
-                    <span class="text-base-content/60 text-sm">دیتابیس</span>
-                    <span class="font-mono text-xs">{{ config('database.default') }}</span>
-                </div>
+    <div style="max-width:900px;margin:0 auto">
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;margin-bottom:12px">
+            <h2 style="margin:0 0 10px;font-size:15px;font-weight:800;color:#1e293b">📚 امکانات</h2>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;font-size:12.5px;color:#475569">
+                <div>✅ مدیریت سفارشات</div>
+                <div>✅ شناسنامه و قالب‌ها</div>
+                <div>✅ همگام‌سازی ووکامرس</div>
+                <div>✅ لیست تامین خودکار</div>
+                <div>✅ حسابداری و پیامک</div>
+                <div>✅ گزارشات تحلیلی</div>
+                <div>✅ پشتیبان‌گیری</div>
+                <div>✅ مدیریت مشتریان</div>
             </div>
         </div>
-    </div>
 
-    <div class="card bg-base-100 shadow border border-base-300">
-        <div class="card-body p-4">
-            <h2 class="font-bold text-base mb-3">🔗 لینک‌های مفید</h2>
-            <div class="flex flex-wrap gap-2">
-                <a href="https://laravel.com/docs" target="_blank" class="btn btn-outline btn-sm">📖 Laravel Docs</a>
-                <a href="https://livewire.laravel.com/docs" target="_blank" class="btn btn-outline btn-sm">⚡ Livewire</a>
-                <a href="https://daisyui.com" target="_blank" class="btn btn-outline btn-sm">🌸 DaisyUI</a>
-                <a href="{{ route('settings.health') }}" wire:navigate class="btn btn-primary btn-sm">🩺 سلامت سیستم</a>
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px">
+            <h2 style="margin:0 0 10px;font-size:15px;font-weight:800;color:#1e293b">🔗 لینک‌ها</h2>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <a href="{{ route('dashboard') }}" wire:navigate class="sg-btn sg-btn-gray">🏠 داشبورد</a>
+                <a href="{{ route('settings.health') }}" wire:navigate class="sg-btn sg-btn-gray">🩺 سلامت سیستم</a>
+                <a href="{{ route('activity-log') }}" wire:navigate class="sg-btn sg-btn-gray">📜 لاگ‌ها</a>
             </div>
         </div>
-    </div>
-
-    <div class="text-center mt-6 text-xs text-base-content/40">
-        ساخته‌شده توسط گروه هنری اقاقیا — ۱۴۰۵
     </div>
 </div>

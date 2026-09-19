@@ -1,0 +1,57 @@
+
+/* ═══ View Order Modal ═══ */
+.sg-vm-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #f1f5f9;
+}
+.sg-vm-row {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 10px;
+    padding: 10px 0;
+    font-size: 12.5px;
+    border-bottom: 1px dashed #f1f5f9;
+}
+.sg-vm-row:last-child { border-bottom: none; }
+.sg-vm-row .k { color: #64748b; font-weight: 600; }
+.sg-vm-row .v { color: #1e293b; }
+.sg-vm-items {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 12px;
+    margin-top: 8px;
+}
+.sg-vm-item {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border-radius: 8px;
+    background: #fff;
+    margin-bottom: 6px;
+    border: 1px solid #e2e8f0;
+}
+.sg-vm-item-img {
+    width: 48px; height: 48px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.sg-vm-item-img img { width: 100%; height: 100%; object-fit: cover; }
+.sg-vm-item-info { flex: 1; min-width: 0; }
+.sg-vm-item-title { font-weight: 600; font-size: 12px; margin-bottom: 3px; }
+.sg-vm-item-meta { font-size: 10.5px; color: #94a3b8; }
+.sg-vm-item-price { font-family: monospace; font-weight: 700; color: #059669; font-size: 12px; }
+
+@media (max-width: 640px) {
+    .sg-vm-row { grid-template-columns: 1fr; gap: 2px; }
+    .sg-vm-row .k { font-size: 10.5px; }
+}

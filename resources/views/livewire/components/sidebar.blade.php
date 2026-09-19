@@ -69,7 +69,9 @@
                     ['route' => 'orders.index',       'icon' => '📦', 'label' => 'سفارشات',   'badge' => $stats['orders_pending'] ?? 0],
                     ['route' => 'customers.index',    'icon' => '👥', 'label' => 'مشتریان'],
                     ['route' => 'certificates.index', 'icon' => '💎', 'label' => 'شناسنامه'],
+        ['route' => 'products.bulk', 'icon' => '📦', 'label' => 'ثبت گروهی محصولات'],
                     ['route' => 'reports.index',      'icon' => '📊', 'label' => 'گزارش‌ها'],
+                    ['route' => 'accounting.index',   'icon' => '💰', 'label' => 'حسابداری'],
                     ['route' => 'activity-log',       'icon' => '📜', 'label' => 'لاگ'],
                     ['route' => 'settings.index',     'icon' => '⚙️', 'label' => 'تنظیمات'],
                 ];
@@ -91,7 +93,28 @@
                 </li>
             @endforeach
         </ul>
-    </nav>
+    
+{{-- Supply link (auto-added) --}}
+<a href="{{ route('supply.index') }}"
+   class="flex items-center gap-2 px-3 py-2 rounded-lg transition
+          {{ request()->routeIs('supply.*') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200' : 'hover:bg-gray-100 dark:hover:bg-gray-800' }}">
+    <span class="text-lg">📦</span>
+    <span class="flex-1">لیست تامین</span>
+    @php
+        try {
+            $__sc = \App\Models\Order::where(function ($q) {
+                $q->whereIn('supply_status', ['awaiting_supply', 'pending'])
+                  ->orWhereNull('supply_status');
+            })->count();
+        } catch (\Throwable $e) { $__sc = 0; }
+    @endphp
+    @if($__sc > 0)
+        <span class="text-[10px] bg-amber-500 text-white rounded-full px-2 py-0.5">{{ $__sc }}</span>
+    @endif
+</a>
+{{-- /Supply link --}}
+
+</nav>
 
     {{-- ═══ اعلان ═══ --}}
     @if($notifCount > 0)
