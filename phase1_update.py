@@ -1,9 +1,81 @@
-@import "tailwindcss";
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+╔══════════════════════════════════════════════════════════╗
+║  ShopGun v2 — Phase 1 Updater                            ║
+║  Design System: colors, fonts, themes, styles            ║
+║  Safe: takes backup before any change, patches precisely ║
+╚══════════════════════════════════════════════════════════╝
+"""
+
+import os, sys, re, shutil
+from datetime import datetime
+from pathlib import Path
+
+PROJECT    = Path.home() / "shopgun-v2"
+STAMP      = datetime.now().strftime("%Y%m%d_%H%M%S")
+BACKUP_DIR = PROJECT / "backups" / f"phase1_{STAMP}"
+
+class C:
+    G='\033[92m'; Y='\033[93m'; R='\033[91m'; B='\033[94m'; D='\033[2m'; E='\033[0m'
+
+def log(msg, kind='info'):
+    icon = {'info':'🔹','ok':'✅','warn':'⚠️ ','err':'❌'}.get(kind,'•')
+    col  = {'info':C.B,'ok':C.G,'warn':C.Y,'err':C.R}.get(kind,C.E)
+    print(f"{col}{icon} {msg}{C.E}")
+
+def backup(rel):
+    src = PROJECT / rel
+    if not src.exists():
+        return None
+    dst = BACKUP_DIR / rel
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dst)
+    log(f"backup: {rel}", 'info')
+    return dst
+
+def write_file(rel, content):
+    dst = PROJECT / rel
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    dst.write_text(content, encoding='utf-8')
+    log(f"نوشته شد: {rel}", 'ok')
+
+def read_file(rel):
+    p = PROJECT / rel
+    return p.read_text(encoding='utf-8') if p.exists() else None
+
+def confirm(prompt):
+    try:
+        return input(f"{C.Y}{prompt} [y/N]: {C.E}").strip().lower() in ('y','yes')
+    except EOFError:
+        return False
+
+# ─────────────────────────────────────────────
+#  محتوای فایل‌های جدید
+# ─────────────────────────────────────────────
+
+CSS_CONTENT = r'''@import "tailwindcss";
 @plugin "daisyui";
 
 /* ============================================================
    ShopGun Design System v2
    ============================================================ */
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn-Regular.woff2') format('woff2');
+  font-weight: 400; font-display: swap;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn-Medium.woff2') format('woff2');
+  font-weight: 500; font-display: swap;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn-Bold.woff2') format('woff2');
+  font-weight: 700; font-display: swap;
+}
 
 :root {
   --sg-bg:            #f5f7fa;
@@ -337,116 +409,198 @@ button, a, [role="button"], input, select, textarea { touch-action: manipulation
   border-color: var(--sg-primary);
   box-shadow: 0 0 0 3px var(--sg-primary-soft);
 }
+'''
 
-/* ============================================================
-   Phase 2b — Layout & Mobile Fixes (with REAL class names)
-   ============================================================ */
+JS_CONTENT = r'''import './bootstrap';
 
-[x-cloak] { display: none !important; }
+// ---------- همگام‌سازی تم و سبک از localStorage ----------
+const savedTheme = localStorage.getItem('sg-theme');
+const savedStyle = localStorage.getItem('sg-style');
 
-/* --- هدر چسبنده --- */
-.sg-main-header,
-header.sg-main-header {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  background: color-mix(in srgb, var(--sg-bg) 88%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--sg-border);
+if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+if (savedStyle) document.documentElement.setAttribute('data-style', savedStyle);
+
+// ---------- گوش دادن به تغییرات از Livewire ----------
+window.addEventListener('theme-changed', (e) => {
+  const d = e.detail || {};
+  if (d.theme) { document.documentElement.setAttribute('data-theme', d.theme); localStorage.setItem('sg-theme', d.theme); }
+  if (d.style) { document.documentElement.setAttribute('data-style', d.style); localStorage.setItem('sg-style', d.style); }
+  if (d.primary) document.documentElement.style.setProperty('--sg-primary', d.primary);
+  if (d.accent)  document.documentElement.style.setProperty('--sg-accent', d.accent);
+  if (d.font)    document.documentElement.style.setProperty('--sg-font', `'${d.font}', sans-serif`);
+});
+
+// ---------- شناسایی تم سیستم ----------
+if (!savedTheme) {
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
 }
+'''
 
-/* --- رفع فضای خالی موبایل ---
-   تمام wrapperهای اصلی در موبایل: بدون margin، padding کامل */
-@media (max-width: 1023px) {
-  body > *,
-  .sg-app-shell,
-  .sg-layout,
-  .sg-wrapper,
-  .sg-content-area,
-  .sg-main,
-  main.sg-main,
-  main {
-    margin-right: 0 !important;
-    margin-left: 0 !important;
-    padding-right: 4px !important;
-    padding-left: 4px !important;
-    width: 100% !important;
-    max-width: 100vw !important;
-    box-sizing: border-box;
-  }
+# ─────────────────────────────────────────────
+#  پچ‌های هدفمند روی فایل‌های موجود
+# ─────────────────────────────────────────────
 
-  .sg-content-area {
-    padding: 8px !important;
-  }
+def patch_app_blade():
+    """افزودن data-theme و data-style به تگ html + بلوک style زنده"""
+    rel = "resources/views/components/layouts/app.blade.php"
+    src = read_file(rel)
+    if src is None:
+        log(f"پیدا نشد: {rel}", 'warn')
+        return False
 
-  /* سایدبار مخفی در موبایل */
-  .sg-sidebar,
-  aside.sg-sidebar,
-  aside {
-    display: none !important;
-  }
+    backup(rel)
+    original = src
 
-  /* حذف هر margin بزرگی که ممکن است سایدبار را جبران کند */
-  [class*="mr-"][class*="240"],
-  [class*="ml-"][class*="240"],
-  [class*="mr-"][class*="256"],
-  [class*="ml-"][class*="256"],
-  [class*="mr-"][class*="260"],
-  [class*="ml-"][class*="260"],
-  [class*="pr-"][class*="240"],
-  [class*="pl-"][class*="240"],
-  [style*="margin-right: 240"],
-  [style*="margin-left: 240"],
-  [style*="margin-right:240"],
-  [style*="margin-left:240"] {
-    margin-right: 0 !important;
-    margin-left: 0 !important;
-  }
+    # ۱. تگ <html> — افزودن data-theme/data-style
+    src = re.sub(
+        r'<html\s+lang="fa"\s+dir="rtl"\s*>',
+        '<html lang="fa" dir="rtl" data-theme="{{ $_theme ?? \'dark\' }}" data-style="{{ $_style ?? \'material\' }}">',
+        src, count=1
+    )
+    # اگر قبلاً data-theme داشت، دوباره تغییر نده
+    if 'data-theme=' not in src:
+        src = re.sub(
+            r'<html([^>]*)>',
+            r'<html\1 data-theme="{{ $_theme ?? \'dark\' }}" data-style="{{ $_style ?? \'material\' }}">',
+            src, count=1
+        )
 
-  /* فاصله پایین برای نوار موبایل */
-  body { padding-bottom: 72px; }
-}
+    # ۲. تزریق بلوک <style> زنده قبل از @vite
+    live_style = '''  <style>
+    :root {
+      --sg-primary:       {{ $_p ?? '#1a5276' }};
+      --sg-primary-hover: color-mix(in srgb, {{ $_p ?? '#1a5276' }} 85%, black);
+      --sg-accent:        {{ $_g ?? '#c9a84c' }};
+      --sg-font:          '{{ $_f ?? 'Vazirmatn' }}', ui-sans-serif, system-ui, sans-serif;
+    }
+    html, body { font-family: var(--sg-font); }
+  </style>
 
-/* --- نوار پایین موبایل --- */
-.sg-mobile-bar,
-nav.sg-mobile-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  background: color-mix(in srgb, var(--sg-surface) 92%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-top: 1px solid var(--sg-border);
-  padding-bottom: env(safe-area-inset-bottom, 0);
-  display: flex;
-}
-.sg-mobile-bar a {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 8px 4px;
-  font-size: 10px;
-  color: var(--sg-text-muted);
-  text-decoration: none;
-  transition: color 0.15s ease;
-}
-.sg-mobile-bar a.active,
-.sg-mobile-bar a[aria-current="page"] {
-  color: var(--sg-primary);
-}
+'''
+    if '--sg-primary:' not in src:
+        src = re.sub(r'(@vite\()', live_style + r'\1', src, count=1)
 
-/* --- انیمیشن صفحه --- */
-.sg-page-enter { animation: sgFadeIn 0.18s ease-out; }
+    if src != original:
+        write_file(rel, src)
+        return True
+    else:
+        log(f"تغییری اعمال نشد (از قبل بروز بود): {rel}", 'warn')
+        return False
 
-/* --- پاپ‌آپ: بسته شدن با کلیک بیرون (fallback) --- */
-.sg-popup-backdrop > .sg-popup-panel {
-  pointer-events: auto;
-}
-.sg-popup-backdrop {
-  pointer-events: auto;
-}
+
+def patch_settings_component():
+    """افزودن متد updated() به Settings/Index.php"""
+    rel = "app/Livewire/Settings/Index.php"
+    src = read_file(rel)
+    if src is None:
+        log(f"پیدا نشد: {rel}", 'warn')
+        return False
+
+    if 'public function updated(' in src:
+        log(f"متد updated() از قبل وجود دارد: {rel}", 'warn')
+        return False
+
+    backup(rel)
+
+    method = '''
+    public function updated($property)
+    {
+        if (! in_array($property, ['primary_color', 'accent_color', 'font_family', 'theme', 'ui_style'])) {
+            return;
+        }
+
+        AppSetting::set('primary_color', $this->primary_color);
+        AppSetting::set('accent_color',  $this->accent_color);
+        AppSetting::set('font_family',   $this->font_family);
+        AppSetting::set('theme',         $this->theme);
+        AppSetting::set('ui_style',      $this->ui_style);
+
+        $this->dispatch('theme-changed', [
+            'theme'   => $this->theme,
+            'style'   => $this->ui_style,
+            'primary' => $this->primary_color,
+            'accent'  => $this->accent_color,
+            'font'    => $this->font_family,
+        ]);
+    }
+
+'''
+
+    # درج قبل از متد render()
+    if 'public function render(' in src:
+        src = src.replace('public function render(', method + '    public function render(', 1)
+    else:
+        # اگر render نبود، قبل از آخرین }
+        idx = src.rstrip().rfind('}')
+        src = src[:idx] + method + src[idx:]
+
+    write_file(rel, src)
+    return True
+
+
+# ─────────────────────────────────────────────
+#  اجرای اصلی
+# ─────────────────────────────────────────────
+
+def main():
+    print()
+    print(f"{C.B}══════════════════════════════════════════════════════{C.E}")
+    print(f"{C.B}  ShopGun v2 — Phase 1: Design System Updater{C.E}")
+    print(f"{C.B}══════════════════════════════════════════════════════{C.E}")
+    print()
+
+    if not PROJECT.exists():
+        log(f"پروژه پیدا نشد در: {PROJECT}", 'err')
+        sys.exit(1)
+
+    log(f"پروژه: {PROJECT}", 'info')
+    log(f"بکاپ‌ها در: {BACKUP_DIR}", 'info')
+    print()
+
+    if not confirm("ادامه می‌دهی؟ (بکاپ خودکار گرفته می‌شود)"):
+        log("لغو شد.", 'warn')
+        sys.exit(0)
+
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+    print()
+
+    # ۱. بازنویسی CSS
+    log("── [1/4] بازنویسی app.css", 'info')
+    backup("resources/css/app.css")
+    write_file("resources/css/app.css", CSS_CONTENT)
+    print()
+
+    # ۲. بازنویسی JS
+    log("── [2/4] بازنویسی app.js", 'info')
+    backup("resources/js/app.js")
+    write_file("resources/js/app.js", JS_CONTENT)
+    print()
+
+    # ۳. پچ app.blade.php
+    log("── [3/4] پچ app.blade.php", 'info')
+    patch_app_blade()
+    print()
+
+    # ۴. پچ Settings/Index.php
+    log("── [4/4] پچ Settings/Index.php", 'info')
+    patch_settings_component()
+    print()
+
+    print(f"{C.G}══════════════════════════════════════════════════════{C.E}")
+    print(f"{C.G}  ✅ فاز ۱ با موفقیت اعمال شد{C.E}")
+    print(f"{C.G}══════════════════════════════════════════════════════{C.E}")
+    print()
+    print("گام بعدی:")
+    print(f"  {C.B}php artisan optimize:clear{C.E}")
+    print(f"  {C.B}npm run build{C.E}   (اگر Vite داری)")
+    print(f"  {C.B}php artisan serve{C.E}")
+    print()
+    print(f"در صورت مشکل، بکاپ‌ها در: {BACKUP_DIR}")
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print(f"\n{C.Y}لغو شد توسط کاربر{C.E}")
+        sys.exit(130)

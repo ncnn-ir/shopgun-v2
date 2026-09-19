@@ -18,9 +18,6 @@ use Livewire\WithFileUploads;
  */
 class Index extends Component
 {
-    // ─── تنظیمات ظاهری (auto-added) ───
-    public $ui_style = 'material';
-
     use WithFileUploads;
 
     // ★ ناوبری
@@ -826,22 +823,11 @@ class Index extends Component
             return;
         }
 
-        $settings = [
-            'primary_color' => $this->primary_color,
-            'accent_color'  => $this->accent_color,
-            'font_family'   => $this->font_family,
-            'theme'         => $this->theme,
-            'ui_style'      => $this->ui_style,
-        ];
-
-        foreach ($settings as $key => $value) {
-            \App\Models\AppSetting::updateOrCreate(
-                ['key' => $key],
-                ['value' => $value]
-            );
-        }
-
-        \Illuminate\Support\Facades\Cache::forget('app_settings_all');
+        AppSetting::set('primary_color', $this->primary_color);
+        AppSetting::set('accent_color',  $this->accent_color);
+        AppSetting::set('font_family',   $this->font_family);
+        AppSetting::set('theme',         $this->theme);
+        AppSetting::set('ui_style',      $this->ui_style);
 
         $this->dispatch('theme-changed', [
             'theme'   => $this->theme,

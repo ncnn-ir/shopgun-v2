@@ -22,30 +22,3 @@ if (!savedTheme) {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
 }
-
-/* ============================================================
-   Global popup close — کلیک بیرون پاپ‌آپ را می‌بندد
-   ============================================================ */
-window.sgGlobalPopupClose = function () {
-  document.addEventListener('click', function (e) {
-    const backdrop = e.target.closest('.sg-popup-backdrop');
-    if (!backdrop) return;
-
-    // اگر کلیک روی خود backdrop یا child .absolute inset-0 بود (نه panel)
-    const panel = e.target.closest('.sg-popup-panel');
-    if (panel) return; // کلیک داخل پنل — بستن نکن
-
-    // تلاش برای بستن با Alpine
-    const alpineData = backdrop._x_dataStack && backdrop._x_dataStack[0];
-    if (alpineData && typeof alpineData.open !== 'undefined') {
-      alpineData.open = false;
-      return;
-    }
-
-    // fallback: مخفی کردن مستقیم
-    backdrop.style.display = 'none';
-  });
-};
-
-document.addEventListener('DOMContentLoaded', window.sgGlobalPopupClose);
-document.addEventListener('livewire:navigated', window.sgGlobalPopupClose);

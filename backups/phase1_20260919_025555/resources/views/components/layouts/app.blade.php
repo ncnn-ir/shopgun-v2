@@ -1,11 +1,4 @@
 <!DOCTYPE html>
-@php
-  $_theme = \App\Models\AppSetting::get('theme', 'dark');
-  $_style = \App\Models\AppSetting::get('ui_style', 'material');
-  $_p = \App\Models\AppSetting::get('primary_color', '#1a5276');
-  $_g = \App\Models\AppSetting::get('accent_color', '#c9a84c');
-  $_f = \App\Models\AppSetting::get('font_family', 'Vazirmatn');
-@endphp
 <html lang="fa" dir="rtl" data-theme="{{ \App\Models\AppSetting::get('theme', 'light') }}">
 <head>
     <meta charset="UTF-8">
@@ -26,17 +19,7 @@
         })();
     </script>
 
-      <style>
-    :root {
-      --sg-primary:       {{ $_p ?? '#1a5276' }};
-      --sg-primary-hover: color-mix(in srgb, {{ $_p ?? '#1a5276' }} 85%, black);
-      --sg-accent:        {{ $_g ?? '#c9a84c' }};
-      --sg-font:          '{{ $_f ?? 'Vazirmatn' }}', ui-sans-serif, system-ui, sans-serif;
-    }
-    html, body { font-family: var(--sg-font); }
-  </style>
-
-@vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 
     <link rel="stylesheet" href="{{ asset('css/legacy.css') }}?v=1">
@@ -45,6 +28,15 @@
     @stack('styles')
     <link rel="stylesheet" href="{{ asset('css/reports.css') }}?v=1">
 <link rel="stylesheet" href="{{ asset('css/settings-tabs-fix.css') }}">
+    @php
+        try {
+            $_p = \App\Models\AppSetting::get('primary_color', '#1a5276');
+            $_g = \App\Models\AppSetting::get('accent_color', '#c9a84c');
+            $_f = \App\Models\AppSetting::get('font_family', 'Vazirmatn');
+        } catch (\Throwable $e) {
+            $_p = '#1a5276'; $_g = '#c9a84c'; $_f = 'Vazirmatn';
+        }
+    @endphp
     <style>
         :root {
             --primary: {{ $_p }} !important;

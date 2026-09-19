@@ -18,9 +18,6 @@ use Livewire\WithFileUploads;
  */
 class Index extends Component
 {
-    // ─── تنظیمات ظاهری (auto-added) ───
-    public $ui_style = 'material';
-
     use WithFileUploads;
 
     // ★ ناوبری

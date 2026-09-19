@@ -18,9 +18,6 @@ use Livewire\WithFileUploads;
  */
 class Index extends Component
 {
-    // ─── تنظیمات ظاهری (auto-added) ───
-    public $ui_style = 'material';
-
     use WithFileUploads;
 
     // ★ ناوبری
@@ -817,39 +814,6 @@ class Index extends Component
                  . '<b>⚠️ خطا:</b><br>' . htmlspecialchars($e->getMessage())
                  . '<br><small>' . htmlspecialchars(basename($e->getFile())) . ':' . $e->getLine() . '</small></div>';
         }
-    }
-
-    
-    public function updated($property)
-    {
-        if (! in_array($property, ['primary_color', 'accent_color', 'font_family', 'theme', 'ui_style'])) {
-            return;
-        }
-
-        $settings = [
-            'primary_color' => $this->primary_color,
-            'accent_color'  => $this->accent_color,
-            'font_family'   => $this->font_family,
-            'theme'         => $this->theme,
-            'ui_style'      => $this->ui_style,
-        ];
-
-        foreach ($settings as $key => $value) {
-            \App\Models\AppSetting::updateOrCreate(
-                ['key' => $key],
-                ['value' => $value]
-            );
-        }
-
-        \Illuminate\Support\Facades\Cache::forget('app_settings_all');
-
-        $this->dispatch('theme-changed', [
-            'theme'   => $this->theme,
-            'style'   => $this->ui_style,
-            'primary' => $this->primary_color,
-            'accent'  => $this->accent_color,
-            'font'    => $this->font_family,
-        ]);
     }
 
     public function render()
