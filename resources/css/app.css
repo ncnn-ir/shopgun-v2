@@ -450,3 +450,97 @@ nav.sg-mobile-bar {
 .sg-popup-backdrop {
   pointer-events: auto;
 }
+
+
+/* ============================================================
+   Desktop Layout Fixes — Phase 2c
+   ============================================================ */
+
+/* مخفی کردن نوار موبایل در دسکتاپ (>= 1024px) */
+@media (min-width: 1024px) {
+  .sg-mobile-bar,
+  nav.sg-mobile-bar,
+  [data-sg-mobile-bar] {
+    display: none !important;
+  }
+
+  /* حذف فاصله پایین که فقط برای موبایل بود */
+  body { padding-bottom: 0 !important; }
+}
+
+/* ─── دسکتاپ: فاصله بین سایدبار و محتوا ─── */
+@media (min-width: 1024px) {
+  /* سایدبار در دسکتاپ */
+  .sg-sidebar,
+  aside.sg-sidebar,
+  aside[data-sg-sidebar] {
+    display: flex !important;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 240px;
+    z-index: 30;
+  }
+
+  /* محتوا در دسکتاپ: offset از سایدبار */
+  .sg-content-area,
+  .sg-main,
+  main.sg-main,
+  main {
+    margin-right: 240px !important;
+    margin-left: 0 !important;
+    padding: 24px 28px !important;
+    width: auto !important;
+    max-width: none !important;
+    min-height: 100vh;
+  }
+
+  /* هدر دسکتاپ */
+  .sg-main-header,
+  header.sg-main-header {
+    padding: 12px 24px !important;
+  }
+}
+
+/* ─── رفع چسبیدن کارت‌ها به هم ─── */
+.sg-content-area > * + *,
+.sg-main > * + * {
+  margin-top: 20px;
+}
+
+.sg-content-area > section + section,
+.sg-main > section + section {
+  margin-top: 24px;
+}
+
+/* ─── رفع چسبیدن کارت‌های آماری به هم ─── */
+.sg-content-area .grid,
+.sg-main .grid {
+  gap: 16px;
+}
+
+/* ─── فاصله کارت‌ها در دسکتاپ ─── */
+@media (min-width: 1024px) {
+  .sg-card,
+  .sg-panel {
+    padding: 20px;
+  }
+
+  .sg-content-area > .sg-card + .sg-card,
+  .sg-content-area > .sg-panel + .sg-panel {
+    margin-top: 20px;
+  }
+}
+
+/* ─── موبایل: حفظ تنظیمات قبلی ─── */
+@media (max-width: 1023px) {
+  .sg-content-area {
+    padding: 12px !important;
+  }
+
+  .sg-card,
+  .sg-panel {
+    padding: 14px;
+  }
+}

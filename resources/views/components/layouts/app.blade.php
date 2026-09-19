@@ -169,14 +169,14 @@ img, video, svg, canvas {
 <div class="sg-layout">
     @include('components.layouts.sidebar')
     <div class="sg-content-area">
-        <main>
+        <main class="sg-main">
             {{ $slot }}
         </main>
     </div>
 </div>
 
 {{-- ═══ Mobile Bar ═══ --}}
-<nav class="sg-mobile-bar">
+<nav class="sg-mobile-bar" data-sg-mobile-bar>
     <div class="sg-mobile-bar-inner">
         @php
             $items = [
