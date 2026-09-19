@@ -39,3 +39,21 @@ add_bulk.py
 /-
 /[
 /DIAGNOSTIC*.txt
+
+# ═══ Cleanup Windows ═══
+*.bak.*
+*.bak-*
+*.py
+*.disabled-*
+*.disabled
+/textarea
+/-
+/[
+/DIAGNOSTIC*.txt
+
+# ═══ الگوهای اضافی ═══
+*~
+*.py~
+/"hopgun-v2.2"
+/bject*
+/textarea*
