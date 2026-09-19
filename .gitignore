@@ -57,3 +57,10 @@ add_bulk.py
 /"hopgun-v2.2"
 /bject*
 /textarea*
+
+# ═══ الگوهای اضافی ═══
+*~
+*.py~
+/"hopgun-v2.2"
+/bject*
+/textarea*
