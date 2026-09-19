@@ -1,49 +1,48 @@
-<div wire:poll.15s="refreshCount" class="dropdown dropdown-end">
-    <div tabindex="0" role="button" class="btn btn-ghost btn-sm">
-        <div class="indicator">
-            🔔
+<div wire:poll.8s="pollNew" style="position:relative" x-data="{ open: false }">
+    <button type="button" @click="open = !open"
+            style="position:relative;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">
+        🔔
+        @if($unreadCount > 0)
+            <span style="position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;min-width:18px;height:18px;border-radius:9px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px">
+                {{ $unreadCount > 99 ? '99+' : \App\Support\PersianNumber::toFa($unreadCount) }}
+            </span>
+        @endif
+    </button>
+
+    <div x-show="open" x-transition.opacity @click.outside="open = false"
+         style="position:absolute;top:100%;left:0;margin-top:8px;width:340px;max-width:90vw;background:var(--sg-bg-elevated);border:1px solid var(--sg-border);border-radius:var(--sg-radius);box-shadow:var(--sg-shadow-lg);z-index:200;direction:rtl">
+
+        <div style="padding:12px;border-bottom:1px solid var(--sg-divider);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-weight:700;font-size:13px">🔔 اعلان‌ها</span>
             @if($unreadCount > 0)
-                <span class="badge badge-error badge-xs indicator-item">{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span>
+                <button wire:click="markAllAsRead" style="background:transparent;border:none;color:var(--sg-primary);font-size:11px;font-weight:700;cursor:pointer">✓ خواندن همه</button>
             @endif
         </div>
-    </div>
-    <div tabindex="0" class="dropdown-content z-[100] card card-compact w-80 bg-base-100 shadow-2xl border border-base-300">
-        <div class="card-body p-0">
-            <div class="flex items-center justify-between p-3 border-b border-base-300">
-                <h3 class="font-bold text-sm">🔔 اعلان‌ها @if($unreadCount > 0)<span class="badge badge-error badge-sm">{{ $unreadCount }}</span>@endif</h3>
-                @if($unreadCount > 0)
-                    <button wire:click="markAllAsRead" class="btn btn-ghost btn-xs">✓ خواندن همه</button>
-                @endif
-            </div>
-            <div class="max-h-96 overflow-y-auto">
-                @forelse($notifications as $notif)
-                    <div wire:key="notif-{{ $notif->id }}" class="p-3 border-b border-base-200 hover:bg-base-200 {{ !$notif->is_read ? 'bg-primary/5' : '' }}">
-                        <div class="flex gap-3">
-                            <div class="text-2xl">{{ $notif->icon }}</div>
-                            <div class="flex-1">
-                                <div class="flex justify-between items-start gap-2">
-                                    <div class="font-bold text-sm">{{ $notif->title }}</div>
-                                    <div class="text-[10px] text-base-content/50">{{ $notif->created_at->diffForHumans() }}</div>
-                                </div>
-                                <div class="text-xs text-base-content/70 mt-1">{{ $notif->message }}</div>
-                                <div class="flex gap-2 mt-2">
-                                    @if($notif->url)
-                                        <a href="{{ $notif->url }}" wire:click="markAsRead({{ $notif->id }})" class="btn btn-primary btn-xs">مشاهده</a>
-                                    @endif
-                                    <button wire:click="delete({{ $notif->id }})" class="btn btn-ghost btn-xs text-error mr-auto">🗑️</button>
-                                </div>
+
+        <div style="max-height:400px;overflow-y:auto">
+            @forelse($notifications as $n)
+                <div wire:key="notif-{{ $n->id }}"
+                     style="padding:10px 12px;border-bottom:1px solid var(--sg-divider);{{ !$n->is_read ? 'background:rgba(59,130,246,.04)' : '' }}">
+                    <div style="display:flex;gap:8px">
+                        <div style="font-size:18px">{{ $n->icon }}</div>
+                        <div style="flex:1;min-width:0">
+                            <div style="display:flex;justify-content:space-between;gap:6px">
+                                <div style="font-weight:700;font-size:12px;color:var(--sg-text)">{{ $n->title }}</div>
+                                <div style="font-size:10px;color:var(--sg-text-muted);white-space:nowrap">{{ $n->created_at?->diffForHumans() }}</div>
                             </div>
+                            <div style="font-size:11px;color:var(--sg-text-secondary);margin-top:2px">{{ $n->message }}</div>
+                            @if($n->url)
+                                <a href="{{ $n->url }}" wire:click="markAsRead({{ $n->id }})" @click="open = false"
+                                   style="display:inline-block;margin-top:6px;padding:4px 10px;background:var(--sg-primary);color:#fff;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none">
+                                    مشاهده
+                                </a>
+                            @endif
                         </div>
                     </div>
-                @empty
-                    <div class="text-center py-8 text-base-content/50 text-sm">اعلانی نیست</div>
-                @endforelse
-            </div>
-            @if($notifications->isNotEmpty())
-                <div class="p-3 border-t border-base-300">
-                    <button wire:click="clearAll" class="btn btn-ghost btn-sm w-full">🗑️ پاک کردن همه</button>
                 </div>
-            @endif
+            @empty
+                <div style="padding:30px;text-align:center;color:var(--sg-text-muted);font-size:12px">اعلانی نیست</div>
+            @endforelse
         </div>
     </div>
 </div>

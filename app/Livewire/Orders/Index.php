@@ -85,9 +85,7 @@ class Index extends Component
     {
         $o = Order::find($id);
         if (!$o) return;
-        $list = ['pending', 'final-check', 'courier'];
-        $cur = array_search($o->status, $list, true);
-        $o->update(['status' => $list[($cur === false ? 0 : ($cur + 1)) % 3]]);
+        $o->update(['status' => \App\Support\OrderStatus::next($o->status ?? 'pending')]);
     }
 
     public function render()

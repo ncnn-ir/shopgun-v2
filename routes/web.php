@@ -88,6 +88,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/', OrdersIndex::class)->name('index');
         Route::get('/create', OrdersCreate::class)->name('create');
+        Route::get('/supply-list', \App\Livewire\Orders\SupplyList::class)->name('supply-list');
+
         Route::get('/import-tipax', ImportTipax::class)->name('import-tipax');
         Route::get('/courier-list', OrdersCourierList::class)->name('courier-list');
         Route::get('/bulk-print-labels', OrdersBulkPrintLabels::class)->name('bulk-print-labels');
@@ -253,6 +255,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/labels', \App\Livewire\Settings\Labels::class)->name('labels');
         Route::get('/channels', \App\Livewire\Settings\Channels::class)->name('channels');
         Route::get('/channels', SettingsChannels::class)->name('channels');
+
+        Route::post('/design-style', function () {
+            \App\Models\AppSetting::put('design_style', request('style', 'material'), 'appearance');
+            \Illuminate\Support\Facades\Cache::forget('app_settings_all');
+            return response()->json(['ok' => true]);
+        })->name('update-design-style');
 
         Route::post('/theme', function () {
             \App\Models\AppSetting::put('theme', request('theme'), 'appearance');

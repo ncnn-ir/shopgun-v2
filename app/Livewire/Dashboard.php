@@ -2,104 +2,128 @@
 
 namespace App\Livewire;
 
-use App\Application\Reports\DashboardMetrics;
-use Carbon\Carbon;
+use App\Models\Order;
+use App\Models\Certificate;
+use App\Models\Customer;
+use App\Models\Product;
 use Livewire\Component;
 
 class Dashboard extends Component
 {
-    public string $range = 'today';
-    public array $accessCards = [];
-
-    public bool $showProductPopup = false;
-    public ?array $productDetail = null;
-
-    public function mount(): void
-    {
-        $this->loadAccessCards();
-    }
-
-    protected function loadAccessCards(): void
-    {
-        $this->accessCards = [
-            ['route' => route('orders.index'), 'icon' => '📦', 'label' => 'سفارشات', 'color' => '#3b82f6'],
-            ['route' => route('orders.create'), 'icon' => '➕', 'label' => 'سفارش جدید', 'color' => '#10b981'],
-            ['route' => route('customers.index'), 'icon' => '👥', 'label' => 'مشتریان', 'color' => '#8b5cf6'],
-            ['route' => route('certificates.create'), 'icon' => '💎', 'label' => 'صدور شناسنامه', 'color' => '#c9a84c'],
-            ['route' => route('products.bulk'), 'icon' => '⚡', 'label' => 'ثبت گروهی', 'color' => '#7c3aed'],
-            ['route' => route('reports.index'), 'icon' => '📊', 'label' => 'گزارش‌ها', 'color' => '#06b6d4'],
-            ['route' => route('settings.index'), 'icon' => '⚙️', 'label' => 'تنظیمات', 'color' => '#64748b'],
-            ['route' => route('settings.health'), 'icon' => '🩺', 'label' => 'سلامت', 'color' => '#ef4444'],
-        ];
-    }
+    public string $range = 'week';
 
     public function setRange(string $range): void
     {
         $this->range = $range;
     }
 
-    public function showProduct(string $title, string $sku = ''): void
+    protected function trend(int $current, int $previous): array
     {
-        $this->productDetail = [
-            'title' => $title,
-            'sku' => $sku,
-            'image' => null,
-        ];
-
-        // تلاش برای گرفتن تصویر از Product
-        if ($sku) {
-            $p = \App\Models\Product::where('sku', $sku)->first();
-            if ($p && $p->image_src) {
-                $this->productDetail['image'] = $p->image_src;
-            }
+        if ($previous == 0) {
+            return ['dir' => $current > 0 ? 'up' : 'flat', 'pct' => $current > 0 ? 100 : 0];
         }
-
-        $this->showProductPopup = true;
-    }
-
-    public function closeProduct(): void
-    {
-        $this->showProductPopup = false;
-        $this->productDetail = null;
-    }
-
-    public function markSupplied(int $orderId): void
-    {
-        $order = \App\Models\Order::find($orderId);
-        if (!$order) return;
-
-        $order->update(['supply_status' => 'delivered_to_shipping']);
-        $this->dispatch('notify', type: 'success', message: 'تحویل واحد ارسال شد ✅');
-    }
-
-    protected function getPeriods(): array
-    {
-        $now = now();
-        return match ($this->range) {
-            'today' => [$now->copy()->startOfDay(), $now->copy()->endOfDay(), 'امروز'],
-            'yesterday' => [$now->copy()->subDay()->startOfDay(), $now->copy()->subDay()->endOfDay(), 'دیروز'],
-            'week' => [$now->copy()->subDays(6)->startOfDay(), $now->copy()->endOfDay(), '۷ روز اخیر'],
-            'month' => [$now->copy()->subDays(29)->startOfDay(), $now->copy()->endOfDay(), '۳۰ روز اخیر'],
-            'year' => [$now->copy()->startOfYear(), $now->copy()->endOfDay(), 'سال جاری'],
-            default => [$now->copy()->startOfDay(), $now->copy()->endOfDay(), 'امروز'],
-        };
+        $pct = (($current - $previous) / $previous) * 100;
+        if ($pct > 1) return ['dir' => 'up', 'pct' => round($pct, 1)];
+        if ($pct < -1) return ['dir' => 'down', 'pct' => round(abs($pct), 1)];
+        return ['dir' => 'flat', 'pct' => 0];
     }
 
     public function render()
     {
-        [$from, $to, $label] = $this->getPeriods();
-        $metrics = new DashboardMetrics($from, $to);
+        $now = now();
+        $today = $now->copy()->startOfDay();
+        $yesterday = $now->copy()->subDay()->startOfDay();
+        $yesterdayEnd = $now->copy()->subDay()->endOfDay();
 
-        return view('livewire.dashboard', [
-            'label' => $label,
-            'kpi' => $metrics->kpi(),
-            'salesByChannel' => $metrics->salesByChannel(),
-            'recentByChannel' => $metrics->recentByChannel(10),
-            'salesTrend' => $metrics->salesTrend(),
-            'topProducts' => $metrics->topProducts(10),
-            'topCustomers' => $metrics->topCustomers(10),
-            'cancelRatio' => $metrics->cancelledRatio(),
-            'pendingSupply' => $metrics->pendingSupplyOrders(20),
+        // آمار امروز
+        $ordersToday = Order::whereDate('created_at', $today)->count();
+        $ordersYesterday = Order::whereBetween('created_at', [$yesterday, $yesterdayEnd])->count();
+
+        $revenueToday = (float) Order::whereDate('created_at', $today)->sum('amount');
+        $revenueYesterday = (float) Order::whereBetween('created_at', [$yesterday, $yesterdayEnd])->sum('amount');
+
+        $customersToday = Customer::whereDate('created_at', $today)->count();
+        $customersYesterday = Customer::whereBetween('created_at', [$yesterday, $yesterdayEnd])->count();
+
+        $certsToday = Certificate::whereDate('created_at', $today)->count();
+        $certsYesterday = Certificate::whereBetween('created_at', [$yesterday, $yesterdayEnd])->count();
+
+        $pending = Order::where('status', 'pending')->count();
+        $courier = Order::where('status', 'courier')->count();
+
+        $kpi = [
+            [
+                'icon' => '📦', 'label' => 'سفارش امروز', 'value' => $ordersToday,
+                'yesterday' => $ordersYesterday, 'trend' => $this->trend($ordersToday, $ordersYesterday),
+                'color' => 'rgba(41,128,185,.15)', 'raw' => true,
+            ],
+            [
+                'icon' => '💰', 'label' => 'فروش امروز', 'value' => round($revenueToday / 1000000, 1), 'unit' => 'م',
+                'yesterday' => round($revenueYesterday / 1000000, 1), 'trend' => $this->trend((int) $revenueToday, (int) $revenueYesterday),
+                'color' => 'rgba(39,174,96,.15)', 'dec' => 1,
+            ],
+            [
+                'icon' => '👥', 'label' => 'مشتری جدید', 'value' => $customersToday,
+                'yesterday' => $customersYesterday, 'trend' => $this->trend($customersToday, $customersYesterday),
+                'color' => 'rgba(155,89,182,.15)', 'raw' => true,
+            ],
+            [
+                'icon' => '💎', 'label' => 'شناسنامه', 'value' => $certsToday,
+                'yesterday' => $certsYesterday, 'trend' => $this->trend($certsToday, $certsYesterday),
+                'color' => 'rgba(201,168,76,.2)', 'raw' => true,
+            ],
+            [
+                'icon' => '⏳', 'label' => 'در انتظار', 'value' => $pending,
+                'color' => 'rgba(243,156,18,.15)', 'raw' => true,
+            ],
+            [
+                'icon' => '🚚', 'label' => 'تحویل مامور', 'value' => $courier,
+                'color' => 'rgba(16,185,129,.15)', 'raw' => true,
+            ],
+        ];
+
+        // سری روزانه
+        $series = [];
+        $days = $this->range === 'today' ? 8 : 7;
+        if ($this->range === 'today') {
+            for ($h = 0; $h < 24; $h += 3) {
+                $from = $now->copy()->startOfDay()->addHours($h);
+                $to = $from->copy()->addHours(3);
+                $series[] = [
+                    'date' => $h . 'h',
+                    'count' => Order::whereBetween('created_at', [$from, $to])->count(),
+                ];
+            }
+        } else {
+            for ($i = $days - 1; $i >= 0; $i--) {
+                $d = $now->copy()->subDays($i);
+                $series[] = [
+                    'date' => \App\Support\PersianDate::format($d, 'm/d'),
+                    'count' => Order::whereDate('created_at', $d)->count(),
+                ];
+            }
+        }
+
+        // کانال‌ها
+        $byChannel = Order::with('channel')
+            ->whereDate('created_at', '>=', $now->copy()->subDays(30))
+            ->get()
+            ->groupBy('channel_id')
+            ->map(fn($g) => [
+                'name' => $g->first()->channel?->name ?? 'نامشخص',
+                'color' => $g->first()->channel?->color ?? '#64748b',
+                'count' => $g->count(),
+            ])
+            ->values()
+            ->toArray();
+
+        $recent = Order::with('channel', 'customer', 'items')->latest('id')->limit(6)->get();
+
+        return view('livewire.dashboard-v3', [
+            'kpi' => $kpi,
+            'series' => $series,
+            'byChannel' => $byChannel,
+            'recent' => $recent,
         ])->layout('components.layouts.app');
     }
 }

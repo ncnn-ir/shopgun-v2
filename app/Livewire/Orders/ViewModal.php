@@ -129,5 +129,74 @@ class ViewModal extends Component
         $this->dispatch('notify', type: 'success', message: 'حذف شد');
     }
 
+
+    public function openCustomerProfile(int $customerId): void
+    {
+        $this->close();
+        $this->dispatch('open-customer-profile', customerId: $customerId);
+    }
+
+    public bool $showProductInfo = false;
+    public ?array $productInfo = null;
+
+    public function openProductInfo(string $sku): void
+    {
+        $sku = trim($sku);
+        if ($sku === '') return;
+
+        $info = ['sku' => $sku, 'title' => '', 'price' => 0, 'weight' => null, 'dimensions' => null, 'stock' => null, 'stock_status' => 'unknown', 'image' => null, 'view_url' => null];
+
+        // از ProductIdentity
+        $id = \App\Models\ProductIdentity::where('sku', $sku)->first();
+        if ($id) {
+            $info['title'] = $id->canonical_name ?? '';
+            $info['price'] = (float) ($id->last_known_price ?? 0);
+            $info['weight'] = $id->last_known_weight;
+            $woo = $id->last_known_woo_data;
+            if (is_array($woo)) {
+                $info['image'] = $woo['images'][0]['src'] ?? null;
+                $info['dimensions'] = $woo['dimensions'] ?? null;
+                $info['stock'] = $woo['stock_quantity'] ?? null;
+                $info['stock_status'] = $woo['stock_status'] ?? 'unknown';
+                if (!empty($id->woo_product_id)) {
+                    $site = rtrim((string) \App\Models\AppSetting::get('commerce_url', ''), '/');
+                    $info['view_url'] = $site . '/?p=' . $id->woo_product_id;
+                }
+            }
+        }
+
+        // از Product محلی
+        if (empty($info['title'])) {
+            $local = \App\Models\Product::where('sku', $sku)->first();
+            if ($local) {
+                $info['title'] = $local->name;
+                $info['price'] = (float) $local->price;
+                $info['weight'] = $local->weight;
+                $info['image'] = $local->image_src;
+                $info['stock'] = $local->stock_quantity;
+                $info['stock_status'] = $local->stock_status;
+                $info['dimensions'] = ['length'=>$local->length, 'width'=>$local->width, 'height'=>$local->height];
+            }
+        }
+
+        // از آیتم سفارش
+        if (empty($info['title'])) {
+            $item = \App\Models\OrderItem::where('sku', $sku)->latest('id')->first();
+            if ($item) {
+                $info['title'] = $item->title;
+                $info['price'] = (float) $item->price;
+            }
+        }
+
+        $this->productInfo = $info;
+        $this->showProductInfo = true;
+    }
+
+    public function closeProductInfo(): void
+    {
+        $this->showProductInfo = false;
+        $this->productInfo = null;
+    }
+
     public function render() { return view('livewire.orders.view-modal'); }
 }
