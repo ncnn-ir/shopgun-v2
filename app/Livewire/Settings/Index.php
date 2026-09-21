@@ -820,7 +820,7 @@ class Index extends Component
     }
 
     
-    public function updated($property)
+        public function updated($property)
     {
         if (! in_array($property, ['primary_color', 'accent_color', 'font_family', 'theme', 'ui_style'])) {
             return;
@@ -843,13 +843,14 @@ class Index extends Component
 
         \Illuminate\Support\Facades\Cache::forget('app_settings_all');
 
-        $this->dispatch('theme-changed', [
-            'theme'   => $this->theme,
-            'style'   => $this->ui_style,
-            'primary' => $this->primary_color,
-            'accent'  => $this->accent_color,
-            'font'    => $this->font_family,
-        ]);
+        // ★ Named args → JS در e.detail یک object می‌گیرد (نه آرایه)
+        $this->dispatch('theme-changed',
+            theme:   $this->theme,
+            style:   $this->ui_style,
+            primary: $this->primary_color,
+            accent:  $this->accent_color,
+            font:    $this->font_family,
+        );
     }
 
     public function render()

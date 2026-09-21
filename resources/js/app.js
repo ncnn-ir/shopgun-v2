@@ -1,48 +1,72 @@
 import './bootstrap';
 
-// ---------- همگام‌سازی تم و سبک از localStorage ----------
-const savedTheme = localStorage.getItem('sg-theme');
-const savedStyle = localStorage.getItem('sg-style');
+// ═══════════════════════════════════════════════════════════
+// Theme & Style Manager
+// ═══════════════════════════════════════════════════════════
 
-if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
-if (savedStyle) document.documentElement.setAttribute('data-style', savedStyle);
+const THEME_KEY = 'sg-theme';
+const STYLE_KEY = 'sg-style';
 
-// ---------- گوش دادن به تغییرات از Livewire ----------
-window.addEventListener('theme-changed', (e) => {
-  const d = e.detail || {};
-  if (d.theme) { document.documentElement.setAttribute('data-theme', d.theme); localStorage.setItem('sg-theme', d.theme); }
-  if (d.style) { document.documentElement.setAttribute('data-style', d.style); localStorage.setItem('sg-style', d.style); }
-  if (d.primary) document.documentElement.style.setProperty('--sg-primary', d.primary);
-  if (d.accent)  document.documentElement.style.setProperty('--sg-accent', d.accent);
-  if (d.font)    document.documentElement.style.setProperty('--sg-font', `'${d.font}', sans-serif`);
-});
-
-// ---------- شناسایی تم سیستم ----------
-if (!savedTheme) {
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+function applyTheme(theme) {
+  if (!theme) return;
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem(THEME_KEY, theme);
 }
 
-/* ============================================================
-   Global popup close — کلیک بیرون پاپ‌آپ را می‌بندد
-   ============================================================ */
+function applyStyle(style) {
+  if (!style) return;
+  document.documentElement.setAttribute('data-style', style);
+  localStorage.setItem(STYLE_KEY, style);
+}
+
+function applyVar(name, value) {
+  if (!value) return;
+  document.documentElement.style.setProperty(name, value);
+}
+
+// ─── Livewire: theme-changed event ───
+window.addEventListener('theme-changed', (e) => {
+  // Livewire 3 ممکن است در e.detail آرایه بفرستد
+  let d = e.detail;
+  if (Array.isArray(d)) d = d[0] || {};
+  if (!d || typeof d !== 'object') return;
+
+  if (d.theme)   applyTheme(d.theme);
+  if (d.style)   applyStyle(d.style);
+  if (d.primary) applyVar('--sg-primary', d.primary);
+  if (d.accent)  applyVar('--sg-accent', d.accent);
+  if (d.font)    applyVar('--sg-font', `'${d.font}', 'Vazirmatn', sans-serif`);
+});
+
+// ─── همان‌سازی localStorage با داده‌های سرور در هر لود ───
+document.addEventListener('DOMContentLoaded', () => {
+  const html = document.documentElement;
+  const serverTheme = html.getAttribute('data-theme');
+  const serverStyle = html.getAttribute('data-style');
+
+  if (serverTheme && serverTheme !== localStorage.getItem(THEME_KEY)) {
+    localStorage.setItem(THEME_KEY, serverTheme);
+  }
+  if (serverStyle && serverStyle !== localStorage.getItem(STYLE_KEY)) {
+    localStorage.setItem(STYLE_KEY, serverStyle);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// Global popup close
+// ═══════════════════════════════════════════════════════════
 window.sgGlobalPopupClose = function () {
   document.addEventListener('click', function (e) {
     const backdrop = e.target.closest('.sg-popup-backdrop');
     if (!backdrop) return;
-
-    // اگر کلیک روی خود backdrop یا child .absolute inset-0 بود (نه panel)
     const panel = e.target.closest('.sg-popup-panel');
-    if (panel) return; // کلیک داخل پنل — بستن نکن
+    if (panel) return;
 
-    // تلاش برای بستن با Alpine
     const alpineData = backdrop._x_dataStack && backdrop._x_dataStack[0];
     if (alpineData && typeof alpineData.open !== 'undefined') {
       alpineData.open = false;
       return;
     }
-
-    // fallback: مخفی کردن مستقیم
     backdrop.style.display = 'none';
   });
 };

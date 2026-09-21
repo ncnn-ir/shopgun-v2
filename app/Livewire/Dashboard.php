@@ -5,7 +5,6 @@ namespace App\Livewire;
 use App\Models\Order;
 use App\Models\Certificate;
 use App\Models\Customer;
-use App\Models\Product;
 use Livewire\Component;
 
 class Dashboard extends Component
@@ -17,113 +16,175 @@ class Dashboard extends Component
         $this->range = $range;
     }
 
-    protected function trend(int $current, int $previous): array
+    /**
+     * محاسبه‌ی روند رشد/کاهش
+     */
+    protected function trend(int|float $current, int|float $previous): array
     {
         if ($previous == 0) {
-            return ['dir' => $current > 0 ? 'up' : 'flat', 'pct' => $current > 0 ? 100 : 0];
+            return [
+                'dir'   => $current > 0 ? 'up' : 'flat',
+                'pct'   => $current > 0 ? 100 : 0,
+                'diff'  => $current - $previous,
+            ];
         }
         $pct = (($current - $previous) / $previous) * 100;
-        if ($pct > 1) return ['dir' => 'up', 'pct' => round($pct, 1)];
-        if ($pct < -1) return ['dir' => 'down', 'pct' => round(abs($pct), 1)];
-        return ['dir' => 'flat', 'pct' => 0];
+        return [
+            'dir'  => $pct > 1 ? 'up' : ($pct < -1 ? 'down' : 'flat'),
+            'pct'  => round(abs($pct), 1),
+            'diff' => $current - $previous,
+        ];
     }
 
     public function render()
     {
-        $now = now();
-        $today = $now->copy()->startOfDay();
-        $yesterday = $now->copy()->subDay()->startOfDay();
+        $now          = now();
+        $today        = $now->copy()->startOfDay();
+        $yesterday    = $now->copy()->subDay()->startOfDay();
         $yesterdayEnd = $now->copy()->subDay()->endOfDay();
 
-        // آمار امروز
-        $ordersToday = Order::whereDate('created_at', $today)->count();
+        // ─── KPI امروز vs دیروز ───
+        $ordersToday     = Order::whereDate('created_at', $today)->count();
         $ordersYesterday = Order::whereBetween('created_at', [$yesterday, $yesterdayEnd])->count();
 
-        $revenueToday = (float) Order::whereDate('created_at', $today)->sum('amount');
+        $revenueToday     = (float) Order::whereDate('created_at', $today)->sum('amount');
         $revenueYesterday = (float) Order::whereBetween('created_at', [$yesterday, $yesterdayEnd])->sum('amount');
 
-        $customersToday = Customer::whereDate('created_at', $today)->count();
+        $customersToday     = Customer::whereDate('created_at', $today)->count();
         $customersYesterday = Customer::whereBetween('created_at', [$yesterday, $yesterdayEnd])->count();
 
-        $certsToday = Certificate::whereDate('created_at', $today)->count();
+        $certsToday     = Certificate::whereDate('created_at', $today)->count();
         $certsYesterday = Certificate::whereBetween('created_at', [$yesterday, $yesterdayEnd])->count();
 
-        $pending = Order::where('status', 'pending')->count();
+        $pending = Order::whereNotIn('status', ['delivered', 'cancelled'])->count();
         $courier = Order::where('status', 'courier')->count();
 
         $kpi = [
             [
-                'icon' => '📦', 'label' => 'سفارش امروز', 'value' => $ordersToday,
-                'yesterday' => $ordersYesterday, 'trend' => $this->trend($ordersToday, $ordersYesterday),
-                'color' => 'rgba(41,128,185,.15)', 'raw' => true,
+                'icon'      => '📦',
+                'label'     => 'سفارش امروز',
+                'value'     => $ordersToday,
+                'yesterday' => $ordersYesterday,
+                'trend'     => $this->trend($ordersToday, $ordersYesterday),
+                'color'     => '#3b82f6',
+                'format'    => 'int',
+                'route'     => route('orders.index'),
             ],
             [
-                'icon' => '💰', 'label' => 'فروش امروز', 'value' => round($revenueToday / 1000000, 1), 'unit' => 'م',
-                'yesterday' => round($revenueYesterday / 1000000, 1), 'trend' => $this->trend((int) $revenueToday, (int) $revenueYesterday),
-                'color' => 'rgba(39,174,96,.15)', 'dec' => 1,
+                'icon'      => '💰',
+                'label'     => 'فروش امروز',
+                'value'     => $revenueToday,
+                'yesterday' => $revenueYesterday,
+                'trend'     => $this->trend($revenueToday, $revenueYesterday),
+                'color'     => '#10b981',
+                'format'    => 'money',
+                'route'     => route('orders.index'),
             ],
             [
-                'icon' => '👥', 'label' => 'مشتری جدید', 'value' => $customersToday,
-                'yesterday' => $customersYesterday, 'trend' => $this->trend($customersToday, $customersYesterday),
-                'color' => 'rgba(155,89,182,.15)', 'raw' => true,
+                'icon'      => '👥',
+                'label'     => 'مشتری جدید',
+                'value'     => $customersToday,
+                'yesterday' => $customersYesterday,
+                'trend'     => $this->trend($customersToday, $customersYesterday),
+                'color'     => '#a855f7',
+                'format'    => 'int',
+                'route'     => route('customers.index'),
             ],
             [
-                'icon' => '💎', 'label' => 'شناسنامه', 'value' => $certsToday,
-                'yesterday' => $certsYesterday, 'trend' => $this->trend($certsToday, $certsYesterday),
-                'color' => 'rgba(201,168,76,.2)', 'raw' => true,
+                'icon'      => '💎',
+                'label'     => 'شناسنامه',
+                'value'     => $certsToday,
+                'yesterday' => $certsYesterday,
+                'trend'     => $this->trend($certsToday, $certsYesterday),
+                'color'     => '#c9a84c',
+                'format'    => 'int',
+                'route'     => route('certificates.index'),
             ],
             [
-                'icon' => '⏳', 'label' => 'در انتظار', 'value' => $pending,
-                'color' => 'rgba(243,156,18,.15)', 'raw' => true,
+                'icon'      => '⏳',
+                'label'     => 'در جریان',
+                'value'     => $pending,
+                'yesterday' => null,
+                'trend'     => ['dir' => 'flat', 'pct' => 0, 'diff' => 0],
+                'color'     => '#f59e0b',
+                'format'    => 'int',
+                'route'     => route('orders.index') . '?filterStatus=pending',
             ],
             [
-                'icon' => '🚚', 'label' => 'تحویل مامور', 'value' => $courier,
-                'color' => 'rgba(16,185,129,.15)', 'raw' => true,
+                'icon'      => '🚚',
+                'label'     => 'تحویل پیک',
+                'value'     => $courier,
+                'yesterday' => null,
+                'trend'     => ['dir' => 'flat', 'pct' => 0, 'diff' => 0],
+                'color'     => '#0ea5e9',
+                'format'    => 'int',
+                'route'     => route('orders.index') . '?filterStatus=courier',
             ],
         ];
 
-        // سری روزانه
+        // ─── سری روزانه برای نمودار ───
         $series = [];
-        $days = $this->range === 'today' ? 8 : 7;
         if ($this->range === 'today') {
             for ($h = 0; $h < 24; $h += 3) {
                 $from = $now->copy()->startOfDay()->addHours($h);
-                $to = $from->copy()->addHours(3);
+                $to   = $from->copy()->addHours(3);
                 $series[] = [
-                    'date' => $h . 'h',
+                    'date'  => $h . 'h',
                     'count' => Order::whereBetween('created_at', [$from, $to])->count(),
                 ];
             }
         } else {
-            for ($i = $days - 1; $i >= 0; $i--) {
-                $d = $now->copy()->subDays($i);
-                $series[] = [
-                    'date' => \App\Support\PersianDate::format($d, 'm/d'),
-                    'count' => Order::whereDate('created_at', $d)->count(),
-                ];
+            $days = match ($this->range) {
+                'week'  => 7,
+                'month' => 30,
+                'year'  => 12,
+                default => 7,
+            };
+
+            if ($this->range === 'year') {
+                for ($i = $days - 1; $i >= 0; $i--) {
+                    $m = $now->copy()->subMonths($i);
+                    $series[] = [
+                        'date'  => \App\Support\PersianDate::format($m, 'Y/m'),
+                        'count' => Order::whereYear('created_at', $m->year)
+                                        ->whereMonth('created_at', $m->month)
+                                        ->count(),
+                    ];
+                }
+            } else {
+                for ($i = $days - 1; $i >= 0; $i--) {
+                    $d = $now->copy()->subDays($i);
+                    $series[] = [
+                        'date'  => \App\Support\PersianDate::format($d, 'm/d'),
+                        'count' => Order::whereDate('created_at', $d)->count(),
+                    ];
+                }
             }
         }
 
-        // کانال‌ها
+        // ─── کانال‌ها ───
         $byChannel = Order::with('channel')
             ->whereDate('created_at', '>=', $now->copy()->subDays(30))
             ->get()
             ->groupBy('channel_id')
-            ->map(fn($g) => [
-                'name' => $g->first()->channel?->name ?? 'نامشخص',
+            ->map(fn ($g) => [
+                'name'  => $g->first()->channel?->name ?? 'نامشخص',
                 'color' => $g->first()->channel?->color ?? '#64748b',
                 'count' => $g->count(),
             ])
             ->values()
             ->toArray();
 
-        $recent = Order::with('channel', 'customer', 'items')->latest('id')->limit(6)->get();
+        $recent = Order::with('channel', 'customer', 'items')
+            ->latest('id')
+            ->limit(6)
+            ->get();
 
         return view('livewire.dashboard-v3', [
-            'kpi' => $kpi,
-            'series' => $series,
+            'kpi'       => $kpi,
+            'series'    => $series,
             'byChannel' => $byChannel,
-            'recent' => $recent,
+            'recent'    => $recent,
         ])->layout('components.layouts.app');
     }
 }

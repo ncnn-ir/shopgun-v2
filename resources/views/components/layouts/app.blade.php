@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 @php
-  $_theme = \App\Models\AppSetting::get('theme', 'dark');
+  $_theme = \App\Models\AppSetting::get('theme', 'light');
   $_style = \App\Models\AppSetting::get('ui_style', 'material');
-  $_p = \App\Models\AppSetting::get('primary_color', '#1a5276');
-  $_g = \App\Models\AppSetting::get('accent_color', '#c9a84c');
-  $_f = \App\Models\AppSetting::get('font_family', 'Vazirmatn');
+  $_p     = \App\Models\AppSetting::get('primary_color', '#1a5276');
+  $_g     = \App\Models\AppSetting::get('accent_color', '#c9a84c');
+  $_f     = \App\Models\AppSetting::get('font_family', 'Vazirmatn');
 @endphp
-<html lang="fa" dir="rtl" data-theme="{{ \App\Models\AppSetting::get('theme', 'light') }}">
+<html lang="fa" dir="rtl" data-theme="{{ $_theme }}" data-style="{{ $_style }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
@@ -19,22 +19,34 @@
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:wght@400;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
+    {{-- جلوگیری از FOUC: قبل از رندر، تم از localStorage (کلید یکپارچه) --}}
     <script>
         (function(){
-            var t = localStorage.getItem('theme') || '{{ \App\Models\AppSetting::get("theme", "light") }}';
+            var t = localStorage.getItem('sg-theme') || '{{ $_theme }}';
+            var s = localStorage.getItem('sg-style') || '{{ $_style }}';
             document.documentElement.setAttribute('data-theme', t);
+            document.documentElement.setAttribute('data-style', s);
         })();
     </script>
 
-      <style>
-    :root {
-      --sg-primary:       {{ $_p ?? '#1a5276' }};
-      --sg-primary-hover: color-mix(in srgb, {{ $_p ?? '#1a5276' }} 85%, black);
-      --sg-accent:        {{ $_g ?? '#c9a84c' }};
-      --sg-font:          '{{ $_f ?? 'Vazirmatn' }}', ui-sans-serif, system-ui, sans-serif;
-    }
-    html, body { font-family: var(--sg-font); }
-  </style>
+    <style>
+      :root {
+        --sg-primary:       {{ $_p }};
+        --sg-primary-hover: color-mix(in srgb, {{ $_p }} 85%, black);
+        --sg-accent:        {{ $_g }};
+        --sg-font:          '{{ $_f }}', 'Vazirmatn', ui-sans-serif, system-ui, sans-serif;
+      }
+      /* فونت یکپارچه در همه‌جا */
+      html, body, button, input, select, textarea, optgroup,
+      h1, h2, h3, h4, h5, h6, p, span, a, div, label, li, td, th {
+        font-family: var(--sg-font) !important;
+      }
+      /* استثنا: فونت آیکون‌ها */
+      .fa, .fas, .far, .fab, .fal, [class^="fa-"], [class*=" fa-"],
+      .material-icons, .material-symbols-outlined {
+        font-family: inherit;
+      }
+    </style>
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
